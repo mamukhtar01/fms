@@ -1,7 +1,7 @@
 "use client";
 
 import { assignments } from "@/data/mock";
-import { Button, Card, Col, DatePicker, Form, Input, Row, Select, Table, Tabs, Tag } from "antd";
+import { Button, Card, Col, DatePicker, Form, Input, InputNumber, Row, Select, Table, Tabs, Tag } from "antd";
 
 export default function AssignmentsPage() {
   return (
@@ -69,7 +69,7 @@ export default function AssignmentsPage() {
                   </Col>
                   <Col xs={24} md={8}>
                     <Form.Item label="Qty Issued" name="quantityIssued">
-                      <Input type="number" min={0} />
+                      <InputNumber min={0} style={{ width: "100%" }} />
                     </Form.Item>
                   </Col>
                 </Row>
@@ -97,7 +97,7 @@ export default function AssignmentsPage() {
                   </Col>
                   <Col xs={24} md={8}>
                     <Form.Item label="Quantity Returned" name="quantityReturned">
-                      <Input type="number" min={0} />
+                      <InputNumber min={0} style={{ width: "100%" }} />
                     </Form.Item>
                   </Col>
                 </Row>
