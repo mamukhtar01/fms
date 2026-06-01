@@ -1,36 +1,101 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# SIBC Armoury & Firearms Management System (AFMS)
 
-## Getting Started
+Production-focused web platform for firearm accountability, chain of custody, assignment tracking, ammunition reconciliation, and audit reporting.
 
-First, run the development server:
+## Stack
+
+- Next.js (App Router) + TypeScript
+- Ant Design
+- TanStack Query
+- Day.js
+- PocketBase (auth, database, file storage)
+- Docker + Docker Compose
+
+## Implemented Solution Structure
+
+```text
+app/
+  (auth)/login               Authentication entry
+  (protected)/dashboard      KPIs and activity widgets
+  (protected)/firearms       Inventory + registration form
+  (protected)/personnel      Personnel directory
+  (protected)/assignments    Assignment + return workflow UI
+  (protected)/ammunition     Ammunition reconciliation
+  (protected)/accessories    Accessory inventory
+  (protected)/ownership      Ownership transfer history
+  (protected)/history        Movement timeline
+  (protected)/reports        Export entry points
+  (protected)/users          Admin-only user management
+  (protected)/settings       System settings
+  api/auth/login             PocketBase password auth
+  api/auth/logout            Session clear endpoint
+components/
+  layout/app-shell.tsx       Sidebar + header layout
+  shared/providers.tsx       AntD + React Query providers
+lib/
+  pocketbase.ts              PocketBase client/auth helpers
+  access-control.ts          Role helpers
+data/mock.ts                 UI seed/mock records
+types/domain.ts              Domain model types
+pocketbase/schema.json       Collection schema definitions
+pocketbase/seed.json         Seed data blueprint
+```
+
+## Security & Access Control
+
+- Route protection enforced by `middleware.ts`
+- Session cookie check (`pb_auth`)
+- Role cookie (`safms_role`) for ADMIN/OFFICER permissions
+- Admin-only access check applied on users module
+- App design follows append-only movement and history principles
+
+## Setup
+
+1. Install dependencies:
+
+```bash
+npm install
+```
+
+2. Configure environment:
+
+```bash
+cp .env.example .env
+```
+
+3. Start development server:
 
 ```bash
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+## PocketBase Setup
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+- Run PocketBase and import `pocketbase/schema.json` collection definitions.
+- Load `pocketbase/seed.json` as initial data (or map through your migration scripts).
+- Ensure `users.role` values are `ADMIN` or `OFFICER`.
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+## Docker Deployment
 
-## Learn More
+```bash
+docker compose up --build
+```
 
-To learn more about Next.js, take a look at the following resources:
+Services:
+- Web app: `http://localhost:3000`
+- PocketBase: `http://localhost:8090`
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+## Production Notes
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+- Provide secure `POCKETBASE_ADMIN_PASSWORD` and `POCKETBASE_OFFICER_PASSWORD` values before seeding.
+- Enable HTTPS and secure cookie policy at the reverse proxy.
+- Enforce PocketBase collection rules for officer visibility (`created_by = @request.auth.id`).
+- Configure persistent backup strategy for PocketBase data volume.
+- Wire report exports to server-side handlers for CSV/Excel/PDF generation.
 
-## Deploy on Vercel
+## Lint & Build
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+```bash
+npm run lint
+npm run build
+```
