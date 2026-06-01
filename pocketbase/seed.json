@@ -2,14 +2,14 @@
   "users": [
     {
       "email": "admin@sibc.local",
-      "password": "ChangeThisAdminPass123!",
+      "password_env": "POCKETBASE_ADMIN_PASSWORD",
       "name": "SIBC Admin",
       "username": "admin",
       "role": "ADMIN"
     },
     {
       "email": "officer@sibc.local",
-      "password": "ChangeThisOfficerPass123!",
+      "password_env": "POCKETBASE_OFFICER_PASSWORD",
       "name": "Default Officer",
       "username": "officer01",
       "role": "OFFICER"

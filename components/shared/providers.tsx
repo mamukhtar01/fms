@@ -7,7 +7,6 @@ import { useState } from "react";
 
 export function AppProviders({ children }: { children: React.ReactNode }) {
   const [queryClient] = useState(() => new QueryClient());
-
   return (
     <AntdRegistry>
       <QueryClientProvider client={queryClient}>

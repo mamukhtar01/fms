@@ -87,7 +87,7 @@ Services:
 
 ## Production Notes
 
-- Replace seed credentials before go-live.
+- Provide secure `POCKETBASE_ADMIN_PASSWORD` and `POCKETBASE_OFFICER_PASSWORD` values before seeding.
 - Enable HTTPS and secure cookie policy at the reverse proxy.
 - Enforce PocketBase collection rules for officer visibility (`created_by = @request.auth.id`).
 - Configure persistent backup strategy for PocketBase data volume.

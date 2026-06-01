@@ -1,11 +1,12 @@
 import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
 
-const publicPaths = ["/login"];
+const publicPath = "/login";
 
 export function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
-  const isPublicPath = publicPaths.some((path) => pathname === path || pathname.startsWith(path));
+  const normalizedPath = pathname !== "/" && pathname.endsWith("/") ? pathname.slice(0, -1) : pathname;
+  const isPublicPath = normalizedPath === publicPath;
   const hasSession = Boolean(request.cookies.get("pb_auth")?.value);
 
   if (!hasSession && !isPublicPath && !pathname.startsWith("/api/auth")) {

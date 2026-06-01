@@ -1,13 +1,12 @@
 "use client";
 
-import { Button, Card, Form, Input, Select, Space, Typography, message } from "antd";
+import { Button, Card, Form, Input, Space, Typography, message } from "antd";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 
 interface LoginValues {
   email: string;
   password: string;
-  role: "ADMIN" | "OFFICER";
 }
 
 export default function LoginPage() {
@@ -56,9 +55,6 @@ export default function LoginPage() {
           </Form.Item>
           <Form.Item name="password" label="Password" rules={[{ required: true }]}>
             <Input.Password placeholder="••••••••" />
-          </Form.Item>
-          <Form.Item name="role" label="Role" initialValue="OFFICER" rules={[{ required: true }]}>
-            <Select options={[{ label: "Admin", value: "ADMIN" }, { label: "Officer", value: "OFFICER" }]} />
           </Form.Item>
           <Button block type="primary" htmlType="submit" loading={isLoading}>
             Sign in
