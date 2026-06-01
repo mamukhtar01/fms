@@ -1,0 +1,43 @@
+{
+  "users": [
+    {
+      "email": "admin@sibc.local",
+      "password": "ChangeThisAdminPass123!",
+      "name": "SIBC Admin",
+      "username": "admin",
+      "role": "ADMIN"
+    },
+    {
+      "email": "officer@sibc.local",
+      "password": "ChangeThisOfficerPass123!",
+      "name": "Default Officer",
+      "username": "officer01",
+      "role": "OFFICER"
+    }
+  ],
+  "personnel": [
+    {
+      "personnel_id": "PER-001",
+      "full_name": "Ahmed Noor",
+      "rank": "Inspector",
+      "position": "Unit Lead",
+      "department": "Airport Security",
+      "phone": "+252-61-1234567",
+      "status": "Active"
+    }
+  ],
+  "firearms": [
+    {
+      "firearm_id": "RF-001",
+      "weapon_type": "Rifle",
+      "weapon_name": "AK Platform",
+      "model": "AK-103",
+      "serial_number": "AK103-778901",
+      "ownership_type": "Company-Owned",
+      "owner_name": "SIBC",
+      "status": "Available",
+      "condition": "Excellent",
+      "current_location": "Main Armoury"
+    }
+  ]
+}

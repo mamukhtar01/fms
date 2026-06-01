@@ -1,0 +1,25 @@
+version: "3.9"
+
+services:
+  web:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    env_file:
+      - .env
+    ports:
+      - "3000:3000"
+    depends_on:
+      - pocketbase
+
+  pocketbase:
+    image: spectado/pocketbase:latest
+    ports:
+      - "8090:8090"
+    volumes:
+      - pocketbase_data:/pb/pb_data
+      - ./pocketbase:/pb/pb_migrations
+    command: ["serve", "--http=0.0.0.0:8090"]
+
+volumes:
+  pocketbase_data:

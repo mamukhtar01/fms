@@ -1,0 +1,142 @@
+{
+  "collections": [
+    {
+      "name": "users",
+      "type": "auth",
+      "schema": [
+        { "name": "name", "type": "text", "required": true },
+        { "name": "username", "type": "text", "required": true },
+        { "name": "role", "type": "select", "required": true, "options": { "values": ["ADMIN", "OFFICER"], "maxSelect": 1 } },
+        { "name": "avatar", "type": "file", "required": false, "options": { "maxSelect": 1 } }
+      ]
+    },
+    {
+      "name": "personnel",
+      "type": "base",
+      "schema": [
+        { "name": "personnel_id", "type": "text", "required": true },
+        { "name": "full_name", "type": "text", "required": true },
+        { "name": "rank", "type": "text", "required": true },
+        { "name": "position", "type": "text", "required": true },
+        { "name": "department", "type": "text", "required": true },
+        { "name": "phone", "type": "text", "required": true },
+        { "name": "national_id", "type": "text", "required": false },
+        { "name": "status", "type": "select", "required": true, "options": { "values": ["Active", "Inactive"], "maxSelect": 1 } }
+      ]
+    },
+    {
+      "name": "firearms",
+      "type": "base",
+      "schema": [
+        { "name": "firearm_id", "type": "text", "required": true },
+        { "name": "weapon_type", "type": "text", "required": true },
+        { "name": "weapon_name", "type": "text", "required": true },
+        { "name": "model", "type": "text", "required": true },
+        { "name": "serial_number", "type": "text", "required": true },
+        { "name": "manufacturer", "type": "text", "required": false },
+        { "name": "caliber", "type": "text", "required": false },
+        { "name": "registration_number", "type": "text", "required": false },
+        { "name": "asset_tag", "type": "text", "required": false },
+        { "name": "ownership_type", "type": "select", "required": true, "options": { "values": ["Company-Owned", "Personally-Owned"], "maxSelect": 1 } },
+        { "name": "owner_name", "type": "text", "required": true },
+        { "name": "owner_id", "type": "text", "required": false },
+        { "name": "owner_phone", "type": "text", "required": false },
+        { "name": "owner_department", "type": "text", "required": false },
+        { "name": "status", "type": "select", "required": true, "options": { "values": ["Available", "Assigned", "Under Maintenance", "Lost", "Retired"], "maxSelect": 1 } },
+        { "name": "condition", "type": "select", "required": true, "options": { "values": ["Excellent", "Good", "Fair", "Damaged"], "maxSelect": 1 } },
+        { "name": "current_holder", "type": "text", "required": false },
+        { "name": "current_location", "type": "text", "required": true },
+        { "name": "storage_location", "type": "text", "required": false },
+        { "name": "date_acquired", "type": "date", "required": false },
+        { "name": "image", "type": "file", "required": false, "options": { "maxSelect": 1 } },
+        { "name": "notes", "type": "editor", "required": false },
+        { "name": "created_by", "type": "relation", "required": true, "options": { "collectionId": "users", "maxSelect": 1 } }
+      ]
+    },
+    {
+      "name": "accessories",
+      "type": "base",
+      "schema": [
+        { "name": "accessory_code", "type": "text", "required": true },
+        { "name": "name", "type": "text", "required": true },
+        { "name": "category", "type": "text", "required": true },
+        { "name": "serial_number", "type": "text", "required": false },
+        { "name": "condition", "type": "select", "required": true, "options": { "values": ["Excellent", "Good", "Fair", "Damaged"], "maxSelect": 1 } },
+        { "name": "current_location", "type": "text", "required": true },
+        { "name": "status", "type": "select", "required": true, "options": { "values": ["Available", "Assigned", "Damaged", "Lost"], "maxSelect": 1 } }
+      ]
+    },
+    {
+      "name": "firearm_assignments",
+      "type": "base",
+      "schema": [
+        { "name": "assignment_number", "type": "text", "required": true },
+        { "name": "firearm_id", "type": "relation", "required": true, "options": { "collectionId": "firearms", "maxSelect": 1 } },
+        { "name": "officer_id", "type": "relation", "required": true, "options": { "collectionId": "personnel", "maxSelect": 1 } },
+        { "name": "assigned_by", "type": "relation", "required": true, "options": { "collectionId": "users", "maxSelect": 1 } },
+        { "name": "assignment_datetime", "type": "date", "required": true },
+        { "name": "expected_return_date", "type": "date", "required": true },
+        { "name": "actual_return_datetime", "type": "date", "required": false },
+        { "name": "issue_condition", "type": "select", "required": true, "options": { "values": ["Excellent", "Good", "Fair", "Damaged"], "maxSelect": 1 } },
+        { "name": "return_condition", "type": "select", "required": false, "options": { "values": ["Excellent", "Good", "Fair", "Damaged"], "maxSelect": 1 } },
+        { "name": "purpose", "type": "text", "required": true },
+        { "name": "remarks", "type": "editor", "required": false },
+        { "name": "status", "type": "select", "required": true, "options": { "values": ["Active", "Returned", "Overdue"], "maxSelect": 1 } }
+      ]
+    },
+    {
+      "name": "ammunition_transactions",
+      "type": "base",
+      "schema": [
+        { "name": "assignment_id", "type": "relation", "required": true, "options": { "collectionId": "firearm_assignments", "maxSelect": 1 } },
+        { "name": "ammunition_type", "type": "text", "required": true },
+        { "name": "quantity_issued", "type": "number", "required": true },
+        { "name": "quantity_returned", "type": "number", "required": true },
+        { "name": "quantity_expended", "type": "number", "required": true },
+        { "name": "quantity_missing", "type": "number", "required": true }
+      ]
+    },
+    {
+      "name": "assignment_accessories",
+      "type": "base",
+      "schema": [
+        { "name": "assignment_id", "type": "relation", "required": true, "options": { "collectionId": "firearm_assignments", "maxSelect": 1 } },
+        { "name": "accessory_id", "type": "relation", "required": true, "options": { "collectionId": "accessories", "maxSelect": 1 } },
+        { "name": "issued_condition", "type": "select", "required": true, "options": { "values": ["Excellent", "Good", "Fair", "Damaged"], "maxSelect": 1 } },
+        { "name": "returned_condition", "type": "select", "required": false, "options": { "values": ["Excellent", "Good", "Fair", "Damaged"], "maxSelect": 1 } },
+        { "name": "returned", "type": "bool", "required": true },
+        { "name": "remarks", "type": "editor", "required": false }
+      ]
+    },
+    {
+      "name": "ownership_transfers",
+      "type": "base",
+      "schema": [
+        { "name": "firearm_id", "type": "relation", "required": true, "options": { "collectionId": "firearms", "maxSelect": 1 } },
+        { "name": "previous_owner", "type": "text", "required": true },
+        { "name": "new_owner", "type": "text", "required": true },
+        { "name": "transfer_reason", "type": "text", "required": true },
+        { "name": "approved_by", "type": "relation", "required": true, "options": { "collectionId": "users", "maxSelect": 1 } },
+        { "name": "transfer_date", "type": "date", "required": true },
+        { "name": "remarks", "type": "editor", "required": false }
+      ]
+    },
+    {
+      "name": "firearm_movements",
+      "type": "base",
+      "schema": [
+        { "name": "firearm_id", "type": "relation", "required": true, "options": { "collectionId": "firearms", "maxSelect": 1 } },
+        { "name": "movement_type", "type": "text", "required": true },
+        { "name": "previous_owner", "type": "text", "required": false },
+        { "name": "new_owner", "type": "text", "required": false },
+        { "name": "previous_holder", "type": "text", "required": false },
+        { "name": "new_holder", "type": "text", "required": false },
+        { "name": "previous_location", "type": "text", "required": false },
+        { "name": "new_location", "type": "text", "required": false },
+        { "name": "performed_by", "type": "relation", "required": true, "options": { "collectionId": "users", "maxSelect": 1 } },
+        { "name": "movement_datetime", "type": "date", "required": true },
+        { "name": "remarks", "type": "editor", "required": false }
+      ]
+    }
+  ]
+}
