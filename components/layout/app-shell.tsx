@@ -47,7 +47,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
   }
 
   return (
-    <Layout style={{ minHeight: "100vh" }}>
+    <Layout style={{ minHeight: "100vh"}}>
       <Sider breakpoint="lg" collapsedWidth="0">
         <div style={{ color: "white", padding: 16, fontWeight: 700 }}>SIBC AFMS</div>
         <Menu
@@ -68,11 +68,10 @@ export function AppShell({ children }: { children: React.ReactNode }) {
             justifyContent: "space-between",
           }}
         >
-          <Space direction="vertical" size={0}>
+          <Space orientation="vertical" size={0}>
             <Typography.Title level={5} style={{ margin: 0 }}>
               SIBC Armoury & Firearms Management System
             </Typography.Title>
-            <Typography.Text type="secondary">Secure Accountability & Chain of Custody</Typography.Text>
           </Space>
           <Button icon={<LogoutOutlined />} onClick={logout}>
             Logout

@@ -56,7 +56,7 @@ export default function DashboardPage() {
         <Alert
           type="info"
           showIcon
-          message="Dashboard charts and report widgets are ready for live PocketBase data wiring."
+          title="Dashboard charts and report widgets are ready for live PocketBase data wiring."
           description={
             <Typography.Text>
               Monthly assignment trends, ammunition usage and accessory discrepancies are structured in the data model and can be populated with collection queries.

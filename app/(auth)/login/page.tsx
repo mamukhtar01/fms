@@ -1,6 +1,6 @@
 "use client";
 
-import { Button, Card, Form, Input, Space, Typography, message } from "antd";
+import { App, Button, Card, Form, Input, Space, Typography } from "antd";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 
@@ -11,6 +11,7 @@ interface LoginValues {
 
 export default function LoginPage() {
   const router = useRouter();
+  const { message } = App.useApp();
   const [isLoading, setIsLoading] = useState(false);
 
   async function onFinish(values: LoginValues) {
@@ -40,7 +41,7 @@ export default function LoginPage() {
   return (
     <div style={{ minHeight: "100vh", display: "grid", placeItems: "center", padding: 16 }}>
       <Card style={{ width: "100%", maxWidth: 460 }}>
-        <Space direction="vertical" size={4} style={{ marginBottom: 16 }}>
+        <Space orientation="vertical" size={4} style={{ marginBottom: 16 }}>
           <Typography.Title level={4} style={{ margin: 0 }}>
             SIBC AFMS Login
           </Typography.Title>

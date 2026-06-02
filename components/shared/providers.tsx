@@ -2,7 +2,7 @@
 
 import { AntdRegistry } from "@ant-design/nextjs-registry";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { ConfigProvider, theme } from "antd";
+import { App, ConfigProvider, theme } from "antd";
 import { useState } from "react";
 
 export function AppProviders({ children }: { children: React.ReactNode }) {
@@ -19,7 +19,7 @@ export function AppProviders({ children }: { children: React.ReactNode }) {
             },
           }}
         >
-          {children}
+          <App>{children}</App>
         </ConfigProvider>
       </QueryClientProvider>
     </AntdRegistry>
