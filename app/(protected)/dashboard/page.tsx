@@ -10,7 +10,7 @@ export default function DashboardPage() {
       {dashboardKpis.map((kpi) => (
         <Col key={kpi.key} xs={24} sm={12} lg={8} xl={6}>
           <Card>
-            <Statistic title={kpi.title} value={kpi.value} valueStyle={{ color: kpi.color }} />
+            <Statistic title={kpi.title} value={kpi.value} styles={{ content: { color: kpi.color } }} />
           </Card>
         </Col>
       ))}
