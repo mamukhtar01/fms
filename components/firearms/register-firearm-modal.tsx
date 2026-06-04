@@ -1,10 +1,11 @@
 "use client";
 
-import type { FirearmCondition, FirearmOwnershipType, FirearmStatus } from "@/types/domain";
+import type { FirearmCondition, FirearmOwnershipType, FirearmStatus, Personnel } from "@/types/domain";
+import { useQuery } from "@tanstack/react-query";
 import { App, Button, Col, DatePicker, Form, Input, Modal, Row, Select } from "antd";
 import type { Dayjs } from "dayjs";
 import dayjs from "dayjs";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 
 interface RegisterFirearmModalProps {
   open: boolean;
@@ -42,6 +43,26 @@ export function RegisterFirearmModal({ open, onCancel, onSaved }: RegisterFirear
   const { message } = App.useApp();
   const [submitting, setSubmitting] = useState(false);
   const ownershipType = Form.useWatch("ownershipType", form);
+
+  const { data: personnel = [], isLoading: loadingPersonnel } = useQuery<Personnel[]>({
+    queryKey: ["personnel", "picker"],
+    queryFn: async () => {
+      const response = await fetch("/api/personnel", { cache: "no-store", credentials: "include" });
+      const payload = (await response.json()) as { items?: Personnel[]; message?: string };
+      if (!response.ok) {
+        throw new Error(payload.message ?? "Failed to load personnel");
+      }
+      return payload.items ?? [];
+    },
+    enabled: open && ownershipType === "person",
+    retry: false,
+  });
+
+  useEffect(() => {
+    if (ownershipType !== "person") {
+      form.setFieldValue("ownerId", undefined);
+    }
+  }, [ownershipType, form]);
 
   async function handleSubmit(values: RegisterFirearmFormValues) {
     setSubmitting(true);
@@ -139,11 +160,23 @@ export function RegisterFirearmModal({ open, onCancel, onSaved }: RegisterFirear
           {ownershipType === "person" ? (
             <Col xs={24} md={12}>
               <Form.Item
-                label="Owner (Personnel ID)"
+                label="Owner"
                 name="ownerId"
-                rules={[{ required: true, message: "Enter personnel record ID for owner" }]}
+                rules={[{ required: true, message: "Select the owner" }]}
               >
-                <Input placeholder="PocketBase personnel record id" />
+                <Select
+                  showSearch
+                  loading={loadingPersonnel}
+                  placeholder="Select personnel"
+                  optionFilterProp="label"
+                  options={personnel.map((person) => ({
+                    value: person.id,
+                    label: person.personnelId
+                      ? `${person.fullName} (${person.personnelId})`
+                      : person.fullName,
+                  }))}
+                  notFoundContent={loadingPersonnel ? "Loading personnel…" : "No personnel found"}
+                />
               </Form.Item>
             </Col>
           ) : null}

@@ -1,4 +1,5 @@
 import { createPocketBaseServerClient } from "@/lib/pocketbase";
+import { pocketBaseErrorMessage } from "@/lib/pocketbase-errors";
 import type { Firearm, FirearmCondition, FirearmOwnershipType, FirearmStatus } from "@/types/domain";
 import { ClientResponseError } from "pocketbase";
 import { NextResponse } from "next/server";
@@ -13,6 +14,7 @@ interface FirearmCreatePayload {
   registrationNumber?: string;
   assetTag?: string;
   ownershipType: FirearmOwnershipType;
+  /** Personnel record id when ownershipType is "person" */
   ownerId?: string;
   status: FirearmStatus;
   condition: FirearmCondition;
@@ -77,16 +79,6 @@ function buildFirearmCode(serialNumber: string) {
   return `FR-${serialPart}-${timestampPart}`;
 }
 
-function pocketBaseErrorMessage(error: ClientResponseError) {
-  const data = error.response?.data as { message?: string; data?: Record<string, { message?: string }> } | undefined;
-  const fieldMessages = data?.data
-    ? Object.entries(data.data)
-        .map(([field, detail]) => `${field}: ${detail.message ?? "invalid"}`)
-        .join("; ")
-    : "";
-  return fieldMessages || data?.message || error.message || "Request failed";
-}
-
 export async function GET(request: Request) {
   try {
     const pb = createPocketBaseServerClient(request.headers.get("cookie"));
@@ -138,6 +130,14 @@ export async function POST(request: Request) {
       return NextResponse.json({ message: "Unauthorized" }, { status: 401 });
     }
 
+    if (body.ownershipType === "person" && body.ownerId) {
+      try {
+        await pb.collection("personnel").getOne(body.ownerId);
+      } catch {
+        return NextResponse.json({ message: "Selected owner was not found in personnel" }, { status: 400 });
+      }
+    }
+
     const created = await pb.collection("firearms").create<Record<string, unknown>>({
       firearm_id: buildFirearmCode(body.serialNumber),
       weapon_type: body.weaponType,
@@ -148,7 +148,7 @@ export async function POST(request: Request) {
       registration_number: body.registrationNumber ?? "",
       asset_tag: body.assetTag ?? "",
       ownership_type: body.ownershipType,
-      ...(body.ownerId ? { owner: body.ownerId } : {}),
+      ...(body.ownershipType === "person" && body.ownerId ? { owner: body.ownerId } : {}),
       status: body.status,
       condition: body.condition,
       date_acquired: body.dateAcquired ?? dayjs().format("YYYY-MM-DD"),
@@ -159,6 +159,9 @@ export async function POST(request: Request) {
 
     return NextResponse.json({ item: toDomainFirearm(created) }, { status: 201 });
   } catch (error) {
+    if (error instanceof ClientResponseError) {
+      console.error(error.response?.data);
+    }
     if (error instanceof ClientResponseError) {
       return NextResponse.json(
         { message: pocketBaseErrorMessage(error) },
