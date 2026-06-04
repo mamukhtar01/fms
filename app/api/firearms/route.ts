@@ -39,10 +39,21 @@ function relationDisplayName(value: unknown, fallback = ""): string {
   return fallback;
 }
 
-function toDomainFirearm(record: Record<string, unknown>): Firearm {
-  const owner = record.owner;
-  const currentHolder = record.current_holder;
-  const createdBy = record.created_by;
+function expandedRelation(record: Record<string, unknown>, key: string): unknown {
+  const expand = record.expand as Record<string, unknown> | undefined;
+  if (expand?.[key]) return expand[key];
+  return record[key];
+}
+
+function toDomainFirearm(
+  record: Record<string, unknown>,
+  personnelNames: Map<string, string> = new Map(),
+): Firearm {
+  const owner = expandedRelation(record, "owner");
+  const currentHolder = expandedRelation(record, "current_holder");
+  const createdBy = expandedRelation(record, "created_by");
+  const ownerId = relationId(owner);
+  const currentHolderId = relationId(currentHolder);
 
   return {
     id: String(record.id ?? ""),
@@ -55,12 +66,12 @@ function toDomainFirearm(record: Record<string, unknown>): Firearm {
     registrationNumber: String(record.registration_number ?? ""),
     assetTag: String(record.asset_tag ?? ""),
     ownershipType: String(record.ownership_type ?? "sibc") as FirearmOwnershipType,
-    ownerId: relationId(owner),
-    ownerName: relationDisplayName(owner),
+    ownerId,
+    ownerName: relationDisplayName(owner) || personnelNames.get(ownerId) || "",
     status: String(record.status ?? "Available") as FirearmStatus,
     condition: String(record.condition ?? "Good") as FirearmCondition,
-    currentHolderId: relationId(currentHolder),
-    currentHolderName: relationDisplayName(currentHolder),
+    currentHolderId,
+    currentHolderName: relationDisplayName(currentHolder) || personnelNames.get(currentHolderId) || "",
     dateAcquired: String(record.date_acquired ?? ""),
     image: record.image ? String(record.image) : undefined,
     createdById: relationId(createdBy),
@@ -70,6 +81,24 @@ function toDomainFirearm(record: Record<string, unknown>): Firearm {
     created: record.created ? String(record.created) : undefined,
     updated: record.updated ? String(record.updated) : undefined,
   };
+}
+
+async function loadPersonnelNames(pb: ReturnType<typeof createPocketBaseServerClient>, ids: string[]) {
+  const uniqueIds = [...new Set(ids.filter(Boolean))];
+  const names = new Map<string, string>();
+  if (!uniqueIds.length) return names;
+
+  try {
+    const filter = uniqueIds.map((id) => `id="${id}"`).join(" || ");
+    const rows = await pb.collection("personnel").getFullList<Record<string, unknown>>({ filter });
+    for (const row of rows) {
+      names.set(String(row.id), String(row.full_name ?? ""));
+    }
+  } catch (error) {
+    console.warn("Could not load personnel names for firearms list", error);
+  }
+
+  return names;
 }
 
 function buildFirearmCode(serialNumber: string) {
@@ -83,20 +112,33 @@ export async function GET(request: Request) {
   try {
     const pb = createPocketBaseServerClient(request.headers.get("cookie"));
 
+    if (!pb.authStore.isValid) {
+      return NextResponse.json({ message: "Unauthorized" }, { status: 401 });
+    }
+
+    // Firearms collection has no autodate `created` field; personnel/user view rules
+    // often block expand — fetch without expand so the list always loads.
     const records = await pb.collection("firearms").getFullList<Record<string, unknown>>({
-      sort: "-created",
-      expand: "owner,current_holder,created_by",
+      sort: "-id",
     });
 
-    return NextResponse.json({ items: records.map(toDomainFirearm) });
+    const personnelIds = records.flatMap((record) => [
+      relationId(record.owner),
+      relationId(record.current_holder),
+    ]);
+    const personnelNames = await loadPersonnelNames(pb, personnelIds);
+
+    return NextResponse.json({ items: records.map((record) => toDomainFirearm(record, personnelNames)) });
   } catch (error) {
     if (error instanceof ClientResponseError) {
+      console.error("GET /api/firearms failed", error.status, error.response?.data);
       return NextResponse.json(
         { message: pocketBaseErrorMessage(error) },
         { status: error.status || 500 },
       );
     }
 
+    console.error("GET /api/firearms failed", error);
     return NextResponse.json({ message: "Unable to load firearms" }, { status: 500 });
   }
 }
