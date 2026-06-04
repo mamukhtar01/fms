@@ -1,5 +1,5 @@
-import { authWithPassword } from "@/lib/pocketbase";
 import { ROLE_COOKIE } from "@/lib/access-control";
+import { authWithPassword, setPocketBaseAuthCookie } from "@/lib/pocketbase";
 import { NextResponse } from "next/server";
 
 interface LoginPayload {
@@ -23,7 +23,7 @@ export async function POST(request: Request) {
     }
 
     const response = NextResponse.json({ success: true });
-    response.headers.append("set-cookie", authData.cookie);
+    setPocketBaseAuthCookie(response, authData.token, authData.model, SESSION_MAX_AGE);
     response.cookies.set({
       name: ROLE_COOKIE,
       value: roleValue,

@@ -1,4 +1,4 @@
-import { createPocketBaseClient } from "@/lib/pocketbase";
+import { createPocketBaseServerClient } from "@/lib/pocketbase";
 import type { Firearm, FirearmCondition, FirearmStatus } from "@/types/domain";
 import { ClientResponseError } from "pocketbase";
 import { NextResponse } from "next/server";
@@ -53,8 +53,7 @@ function pocketBaseErrorMessage(error: ClientResponseError) {
 
 export async function GET(request: Request) {
   try {
-    const pb = createPocketBaseClient();
-    pb.authStore.loadFromCookie(request.headers.get("cookie") ?? "");
+    const pb = createPocketBaseServerClient(request.headers.get("cookie"));
 
     const records = await pb.collection("firearms").getFullList<Record<string, unknown>>({
       sort: "-created",
@@ -94,8 +93,7 @@ export async function POST(request: Request) {
       return NextResponse.json({ message: `${missingField} is required` }, { status: 400 });
     }
 
-    const pb = createPocketBaseClient();
-    pb.authStore.loadFromCookie(request.headers.get("cookie") ?? "");
+    const pb = createPocketBaseServerClient(request.headers.get("cookie"));
 
     const userId = pb.authStore.record?.id;
     if (!pb.authStore.isValid || !userId) {
