@@ -11,8 +11,11 @@ import {
   Tag,
 } from "antd";
 import dayjs from "dayjs";
+import { createPocketBaseClient } from "@/lib/pocketbase";
 
 export default function DashboardPage() {
+  const pb = createPocketBaseClient();
+  
   return (
     <Row gutter={[16, 16]}>
       {dashboardKpis.map((kpi) => (
@@ -83,6 +86,7 @@ export default function DashboardPage() {
           title="Refresh to see the latest updates on firearm assignments and movements."
        
         />
+        <h1>{pb.authStore.isValid ? "(Authenticated)" : "(Not Authenticated)"}</h1>
       </Col>
     </Row>
   );
