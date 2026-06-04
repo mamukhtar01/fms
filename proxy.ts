@@ -1,17 +1,19 @@
 import { NextRequest, NextResponse } from "next/server";
-import PocketBase from "pocketbase";
+import { createPocketBaseClient } from "./lib/pocketbase";
 
 const PUBLIC_PATHS = ["/login"];
-const DEFAULT_POCKETBASE_URL = "http://127.0.0.1:8090";
 
 function isAuthenticated(request: NextRequest) {
-  const pb = new PocketBase(
-    process.env.NEXT_PUBLIC_POCKETBASE_URL ?? DEFAULT_POCKETBASE_URL,
-  );
+  const pb = createPocketBaseClient();
 
   pb.authStore.loadFromCookie(
     request.headers.get("cookie") || ""
   );
+
+  console.log("token", pb.authStore.token); 
+  console.log("model", pb.authStore.model);
+  console.log("record", pb.authStore.record);
+  console.log("exportToCookie", pb.authStore.exportToCookie());
 
   return pb.authStore.isValid;
 }
