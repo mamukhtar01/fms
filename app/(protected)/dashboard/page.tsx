@@ -38,7 +38,7 @@ export default function DashboardPage() {
             rowKey="id"
             dataSource={assignments}
             columns={[
-              { title: "Assignment", dataIndex: "assignmentNumber" },
+              { title: "Assignment", dataIndex: "id" },
               { title: "Firearm", dataIndex: "firearmId" },
               { title: "Officer", dataIndex: "officerName" },
               {
@@ -72,7 +72,7 @@ export default function DashboardPage() {
                 title: "Details",
                 key: "details",
                 render: (_, event) =>
-                  `${dayjs(event.movementDateTime).format("DD-MMM-YYYY HH:mm")} by ${event.performedBy}`,
+                  `${dayjs(event.movementDatetime).format("DD-MMM-YYYY HH:mm")} by ${event.performedByName}`,
               },
             ]}
           />

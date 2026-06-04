@@ -1,36 +1,72 @@
 import { createPocketBaseServerClient } from "@/lib/pocketbase";
-import type { Firearm, FirearmCondition, FirearmStatus } from "@/types/domain";
+import type { Firearm, FirearmCondition, FirearmOwnershipType, FirearmStatus } from "@/types/domain";
 import { ClientResponseError } from "pocketbase";
 import { NextResponse } from "next/server";
+import dayjs from "dayjs";
 
 interface FirearmCreatePayload {
   weaponType: string;
-  weaponName: string;
   model: string;
   serialNumber: string;
-  ownershipType: "Company-Owned" | "Personally-Owned";
-  ownerName: string;
-  currentLocation: string;
+  manufacturer?: string;
+  caliber?: string;
+  registrationNumber?: string;
+  assetTag?: string;
+  ownershipType: FirearmOwnershipType;
+  ownerId?: string;
   status: FirearmStatus;
   condition: FirearmCondition;
   dateAcquired?: string;
+  notes?: string;
+  remarks?: string;
+}
+
+function relationId(value: unknown): string {
+  if (typeof value === "string") return value;
+  if (value && typeof value === "object" && "id" in value) {
+    return String((value as { id: string }).id);
+  }
+  return "";
+}
+
+function relationDisplayName(value: unknown, fallback = ""): string {
+  if (value && typeof value === "object") {
+    const record = value as { full_name?: string; name?: string };
+    return String(record.full_name ?? record.name ?? fallback);
+  }
+  return fallback;
 }
 
 function toDomainFirearm(record: Record<string, unknown>): Firearm {
+  const owner = record.owner;
+  const currentHolder = record.current_holder;
+  const createdBy = record.created_by;
+
   return {
     id: String(record.id ?? ""),
     firearmId: String(record.firearm_id ?? ""),
     weaponType: String(record.weapon_type ?? ""),
-    weaponName: String(record.weapon_name ?? ""),
     model: String(record.model ?? ""),
     serialNumber: String(record.serial_number ?? ""),
-    ownershipType: String(record.ownership_type ?? "Company-Owned") as Firearm["ownershipType"],
-    ownerName: String(record.owner_name ?? ""),
-    condition: String(record.condition ?? "Good") as FirearmCondition,
+    manufacturer: String(record.manufacturer ?? ""),
+    caliber: String(record.caliber ?? ""),
+    registrationNumber: String(record.registration_number ?? ""),
+    assetTag: String(record.asset_tag ?? ""),
+    ownershipType: String(record.ownership_type ?? "sibc") as FirearmOwnershipType,
+    ownerId: relationId(owner),
+    ownerName: relationDisplayName(owner),
     status: String(record.status ?? "Available") as FirearmStatus,
-    currentLocation: String(record.current_location ?? ""),
-    currentHolder: String(record.current_holder ?? "Armoury"),
-    createdBy: String(record.created_by ?? ""),
+    condition: String(record.condition ?? "Good") as FirearmCondition,
+    currentHolderId: relationId(currentHolder),
+    currentHolderName: relationDisplayName(currentHolder),
+    dateAcquired: String(record.date_acquired ?? ""),
+    image: record.image ? String(record.image) : undefined,
+    createdById: relationId(createdBy),
+    createdByName: relationDisplayName(createdBy),
+    notes: String(record.notes ?? ""),
+    remarks: String(record.remarks ?? ""),
+    created: record.created ? String(record.created) : undefined,
+    updated: record.updated ? String(record.updated) : undefined,
   };
 }
 
@@ -57,6 +93,7 @@ export async function GET(request: Request) {
 
     const records = await pb.collection("firearms").getFullList<Record<string, unknown>>({
       sort: "-created",
+      expand: "owner,current_holder,created_by",
     });
 
     return NextResponse.json({ items: records.map(toDomainFirearm) });
@@ -78,12 +115,9 @@ export async function POST(request: Request) {
 
     const requiredFields: Array<keyof FirearmCreatePayload> = [
       "weaponType",
-      "weaponName",
       "model",
       "serialNumber",
       "ownershipType",
-      "ownerName",
-      "currentLocation",
       "status",
       "condition",
     ];
@@ -91,6 +125,10 @@ export async function POST(request: Request) {
     const missingField = requiredFields.find((field) => !body[field]);
     if (missingField) {
       return NextResponse.json({ message: `${missingField} is required` }, { status: 400 });
+    }
+
+    if (body.ownershipType === "person" && !body.ownerId) {
+      return NextResponse.json({ message: "ownerId is required for personal ownership" }, { status: 400 });
     }
 
     const pb = createPocketBaseServerClient(request.headers.get("cookie"));
@@ -103,16 +141,20 @@ export async function POST(request: Request) {
     const created = await pb.collection("firearms").create<Record<string, unknown>>({
       firearm_id: buildFirearmCode(body.serialNumber),
       weapon_type: body.weaponType,
-      weapon_name: body.weaponName,
       model: body.model,
       serial_number: body.serialNumber,
+      manufacturer: body.manufacturer ?? "",
+      caliber: body.caliber ?? "",
+      registration_number: body.registrationNumber ?? "",
+      asset_tag: body.assetTag ?? "",
       ownership_type: body.ownershipType,
-      owner_name: body.ownerName,
+      ...(body.ownerId ? { owner: body.ownerId } : {}),
       status: body.status,
       condition: body.condition,
-      current_location: body.currentLocation,
-      date_acquired: body.dateAcquired,
+      date_acquired: body.dateAcquired ?? dayjs().format("YYYY-MM-DD"),
       created_by: userId,
+      notes: body.notes ?? "",
+      remarks: body.remarks ?? "",
     });
 
     return NextResponse.json({ item: toDomainFirearm(created) }, { status: 201 });

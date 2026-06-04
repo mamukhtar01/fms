@@ -1,6 +1,6 @@
 "use client";
 
-import type { FirearmCondition, FirearmStatus } from "@/types/domain";
+import type { FirearmCondition, FirearmOwnershipType, FirearmStatus } from "@/types/domain";
 import { App, Button, Col, DatePicker, Form, Input, Modal, Row, Select } from "antd";
 import type { Dayjs } from "dayjs";
 import dayjs from "dayjs";
@@ -14,26 +14,34 @@ interface RegisterFirearmModalProps {
 
 interface RegisterFirearmFormValues {
   weaponType: string;
-  weaponName: string;
   model: string;
   serialNumber: string;
-  ownershipType: "Company-Owned" | "Personally-Owned";
-  ownerName: string;
-  currentLocation: string;
+  manufacturer?: string;
+  caliber?: string;
+  registrationNumber?: string;
+  assetTag?: string;
+  ownershipType: FirearmOwnershipType;
+  ownerId?: string;
   status: FirearmStatus;
   condition: FirearmCondition;
   dateAcquired?: Dayjs;
+  notes?: string;
+  remarks?: string;
 }
 
 const weaponTypes = ["Rifle", "Pistol", "Shotgun", "Machine Gun", "Other"];
-const ownershipTypes: RegisterFirearmFormValues["ownershipType"][] = ["Company-Owned", "Personally-Owned"];
-const statusOptions: FirearmStatus[] = ["Available", "Assigned", "Under Maintenance", "Lost", "Retired"];
-const conditionOptions: FirearmCondition[] = ["Excellent", "Good", "Fair", "Damaged"];
+const ownershipTypes: { value: FirearmOwnershipType; label: string }[] = [
+  { value: "sibc", label: "SIBC" },
+  { value: "person", label: "Personal" },
+];
+const statusOptions: FirearmStatus[] = ["Available", "Assigned", "Under Maintenance", "Retired"];
+const conditionOptions: FirearmCondition[] = ["Good", "New", "Damaged"];
 
 export function RegisterFirearmModal({ open, onCancel, onSaved }: RegisterFirearmModalProps) {
   const [form] = Form.useForm<RegisterFirearmFormValues>();
   const { message } = App.useApp();
   const [submitting, setSubmitting] = useState(false);
+  const ownershipType = Form.useWatch("ownershipType", form);
 
   async function handleSubmit(values: RegisterFirearmFormValues) {
     setSubmitting(true);
@@ -82,7 +90,7 @@ export function RegisterFirearmModal({ open, onCancel, onSaved }: RegisterFirear
         initialValues={{
           status: "Available",
           condition: "Good",
-          ownershipType: "Company-Owned",
+          ownershipType: "sibc",
           dateAcquired: dayjs(),
         }}
         onFinish={handleSubmit}
@@ -91,11 +99,6 @@ export function RegisterFirearmModal({ open, onCancel, onSaved }: RegisterFirear
           <Col xs={24} md={12}>
             <Form.Item label="Weapon Type" name="weaponType" rules={[{ required: true, message: "Select weapon type" }]}>
               <Select options={weaponTypes.map((value) => ({ value }))} />
-            </Form.Item>
-          </Col>
-          <Col xs={24} md={12}>
-            <Form.Item label="Weapon Name" name="weaponName" rules={[{ required: true, message: "Enter weapon name" }]}>
-              <Input placeholder="e.g. AK Platform" />
             </Form.Item>
           </Col>
           <Col xs={24} md={12}>
@@ -109,20 +112,41 @@ export function RegisterFirearmModal({ open, onCancel, onSaved }: RegisterFirear
             </Form.Item>
           </Col>
           <Col xs={24} md={12}>
+            <Form.Item label="Manufacturer" name="manufacturer">
+              <Input placeholder="e.g. Kalashnikov" />
+            </Form.Item>
+          </Col>
+          <Col xs={24} md={12}>
+            <Form.Item label="Caliber" name="caliber">
+              <Input placeholder="e.g. 7.62x39" />
+            </Form.Item>
+          </Col>
+          <Col xs={24} md={12}>
+            <Form.Item label="Registration Number" name="registrationNumber">
+              <Input />
+            </Form.Item>
+          </Col>
+          <Col xs={24} md={12}>
+            <Form.Item label="Asset Tag" name="assetTag">
+              <Input />
+            </Form.Item>
+          </Col>
+          <Col xs={24} md={12}>
             <Form.Item label="Ownership Type" name="ownershipType" rules={[{ required: true, message: "Select ownership type" }]}>
-              <Select options={ownershipTypes.map((value) => ({ value }))} />
+              <Select options={ownershipTypes} />
             </Form.Item>
           </Col>
-          <Col xs={24} md={12}>
-            <Form.Item label="Owner Name" name="ownerName" rules={[{ required: true, message: "Enter owner name" }]}>
-              <Input placeholder="e.g. SIBC / Officer Name" />
-            </Form.Item>
-          </Col>
-          <Col xs={24} md={12}>
-            <Form.Item label="Current Location" name="currentLocation" rules={[{ required: true, message: "Enter location" }]}>
-              <Input placeholder="e.g. Main Armoury" />
-            </Form.Item>
-          </Col>
+          {ownershipType === "person" ? (
+            <Col xs={24} md={12}>
+              <Form.Item
+                label="Owner (Personnel ID)"
+                name="ownerId"
+                rules={[{ required: true, message: "Enter personnel record ID for owner" }]}
+              >
+                <Input placeholder="PocketBase personnel record id" />
+              </Form.Item>
+            </Col>
+          ) : null}
           <Col xs={24} md={6}>
             <Form.Item label="Status" name="status" rules={[{ required: true, message: "Select status" }]}>
               <Select options={statusOptions.map((value) => ({ value }))} />
@@ -136,6 +160,16 @@ export function RegisterFirearmModal({ open, onCancel, onSaved }: RegisterFirear
           <Col xs={24} md={12}>
             <Form.Item label="Date Acquired" name="dateAcquired">
               <DatePicker style={{ width: "100%" }} />
+            </Form.Item>
+          </Col>
+          <Col xs={24} md={12}>
+            <Form.Item label="Notes" name="notes">
+              <Input.TextArea rows={2} />
+            </Form.Item>
+          </Col>
+          <Col xs={24} md={12}>
+            <Form.Item label="Remarks" name="remarks">
+              <Input.TextArea rows={2} />
             </Form.Item>
           </Col>
         </Row>

@@ -1,29 +1,62 @@
+/** PocketBase collection names */
+export const COLLECTIONS = {
+  users: "users",
+  firearms: "firearms",
+  personnel: "personnel",
+  firearmAssignments: "firearm_assignments",
+  firearmMovements: "firearm_movements",
+  firearmAccessories: "firearm_accessories",
+  accessoryAssignments: "accessory_assignments",
+  ammunitionBatches: "ammunition_batches",
+  ammunitionIssues: "ammunition_issues",
+  firearmInspections: "firearm_inspections",
+  locations: "locations",
+} as const;
+
 export type UserRole = "ADMIN" | "OFFICER";
 
-export type FirearmStatus =
-  | "Available"
-  | "Assigned"
-  | "Under Maintenance"
-  | "Lost"
-  | "Retired";
+export interface User {
+  id: string;
+  email: string;
+  name: string;
+  username: string;
+  role: UserRole;
+  verified?: boolean;
+  avatar?: string;
+}
 
-export type FirearmCondition = "Excellent" | "Good" | "Fair" | "Damaged";
+export type FirearmOwnershipType = "sibc" | "person";
+export type FirearmStatus = "Available" | "Assigned" | "Under Maintenance" | "Retired";
+export type FirearmCondition = "Good" | "New" | "Damaged";
 
 export interface Firearm {
   id: string;
   firearmId: string;
   weaponType: string;
-  weaponName: string;
   model: string;
   serialNumber: string;
-  ownershipType: "Company-Owned" | "Personally-Owned";
+  manufacturer: string;
+  caliber: string;
+  registrationNumber: string;
+  assetTag: string;
+  ownershipType: FirearmOwnershipType;
+  ownerId: string;
   ownerName: string;
-  condition: FirearmCondition;
   status: FirearmStatus;
-  currentLocation: string;
-  currentHolder: string;
-  createdBy: string;
+  condition: FirearmCondition;
+  currentHolderId: string;
+  currentHolderName: string;
+  dateAcquired: string;
+  image?: string;
+  createdById: string;
+  createdByName: string;
+  notes: string;
+  remarks: string;
+  created?: string;
+  updated?: string;
 }
+
+export type PersonnelStatus = "Active" | "inactive";
 
 export interface Personnel {
   id: string;
@@ -33,40 +66,77 @@ export interface Personnel {
   position: string;
   department: string;
   phone: string;
-  status: "Active" | "Inactive";
+  nationalId: string;
+  status: PersonnelStatus;
+  created?: string;
+  updated?: string;
 }
 
-export interface Assignment {
+export type AssignmentCondition = "Excellent" | "Good" | "Damaged";
+export type AssignmentStatus = "Active" | "Returned" | "Overdue";
+
+export interface FirearmAssignment {
   id: string;
-  assignmentNumber: string;
   firearmId: string;
+  officerId: string;
   officerName: string;
-  assignedBy: string;
-  assignmentDateTime: string;
+  assignedById: string;
+  assignedByName: string;
+  assignmentDatetime: string;
   expectedReturnDate: string;
-  status: "Active" | "Returned" | "Overdue";
-  issueCondition: FirearmCondition;
-  returnCondition?: FirearmCondition;
+  actualReturnDatetime?: string;
+  issueCondition: AssignmentCondition;
+  returnCondition?: AssignmentCondition;
+  remarks: string;
+  status: AssignmentStatus;
+  notes: string;
 }
 
-export interface Movement {
+export type MovementType = "IN" | "OUT";
+
+export interface FirearmMovement {
   id: string;
   firearmId: string;
-  movementType:
-    | "Registered"
-    | "Assigned"
-    | "Returned"
-    | "Ownership Transfer"
-    | "Location Change"
-    | "Maintenance Start"
-    | "Maintenance Complete"
-    | "Status Change"
-    | "Lost"
-    | "Found"
-    | "Retired";
-  movementDateTime: string;
-  performedBy: string;
+  movementType: MovementType;
+  newHolderId: string;
+  newHolderName: string;
+  previousHolderId: string;
+  previousHolderName: string;
+  performedById: string;
+  performedByName: string;
+  movementDatetime: string;
   remarks: string;
+  notes: string;
+}
+
+export interface FirearmAccessory {
+  id: string;
+  firearmId: string;
+}
+
+export interface AccessoryAssignment {
+  id: string;
+  notes: string;
+}
+
+export interface AmmunitionBatch {
+  id: string;
+  notes: string;
+}
+
+export interface AmmunitionIssue {
+  id: string;
+  returnedQuantity?: number;
+}
+
+export interface FirearmInspection {
+  id: string;
+  nextCheckDate: string;
+}
+
+export interface Location {
+  id: string;
+  contactPerson: string;
 }
 
 export interface DashboardKpi {
@@ -81,3 +151,9 @@ export interface AuthSession {
   name: string;
   role: UserRole;
 }
+
+/** @deprecated Use FirearmAssignment */
+export type Assignment = FirearmAssignment;
+
+/** @deprecated Use FirearmMovement */
+export type Movement = FirearmMovement;

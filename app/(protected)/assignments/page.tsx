@@ -16,7 +16,7 @@ export default function AssignmentsPage() {
                 rowKey="id"
                 dataSource={assignments}
                 columns={[
-                  { title: "Assignment #", dataIndex: "assignmentNumber" },
+                  { title: "Assignment ID", dataIndex: "id" },
                   { title: "Firearm", dataIndex: "firearmId" },
                   { title: "Officer", dataIndex: "officerName" },
                   { title: "Assigned By", dataIndex: "assignedBy" },
@@ -54,7 +54,7 @@ export default function AssignmentsPage() {
                   </Col>
                   <Col xs={24} md={8}>
                     <Form.Item label="Issue Condition" name="issueCondition" rules={[{ required: true }]}>
-                      <Select options={["Excellent", "Good", "Fair", "Damaged"].map((value) => ({ value }))} />
+                      <Select options={["Excellent", "Good", "Damaged"].map((value) => ({ value }))} />
                     </Form.Item>
                   </Col>
                   <Col xs={24} md={8}>
@@ -92,7 +92,7 @@ export default function AssignmentsPage() {
                   </Col>
                   <Col xs={24} md={8}>
                     <Form.Item label="Return Condition" name="returnCondition" rules={[{ required: true }]}>
-                      <Select options={["Excellent", "Good", "Fair", "Damaged"].map((value) => ({ value }))} />
+                      <Select options={["Excellent", "Good", "Damaged"].map((value) => ({ value }))} />
                     </Form.Item>
                   </Col>
                   <Col xs={24} md={8}>

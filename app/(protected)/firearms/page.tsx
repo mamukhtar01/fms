@@ -53,9 +53,10 @@ export default function FirearmsPage() {
         !term ||
         firearm.firearmId.toLowerCase().includes(term) ||
         firearm.serialNumber.toLowerCase().includes(term) ||
-        firearm.weaponName.toLowerCase().includes(term) ||
+        firearm.model.toLowerCase().includes(term) ||
         firearm.weaponType.toLowerCase().includes(term) ||
-        firearm.currentLocation.toLowerCase().includes(term);
+        firearm.manufacturer.toLowerCase().includes(term) ||
+        firearm.currentHolderName.toLowerCase().includes(term);
 
       return statusMatch && searchMatch;
     });
@@ -128,7 +129,7 @@ export default function FirearmsPage() {
             <Col xs={24} md={16}>
               <Input.Search
                 allowClear
-                placeholder="Search by firearm ID, serial, type, weapon name, or location"
+                placeholder="Search by firearm ID, serial, type, model, manufacturer, or holder"
                 onSearch={setSearch}
                 onChange={(event) => setSearch(event.target.value)}
                 value={search}
@@ -144,7 +145,6 @@ export default function FirearmsPage() {
                   { value: "Available", label: "Available" },
                   { value: "Assigned", label: "Assigned" },
                   { value: "Under Maintenance", label: "Under Maintenance" },
-                  { value: "Lost", label: "Lost" },
                   { value: "Retired", label: "Retired" },
                 ]}
               />
@@ -170,9 +170,13 @@ export default function FirearmsPage() {
             columns={[
               { title: "Firearm ID", dataIndex: "firearmId" },
               { title: "Serial Number", dataIndex: "serialNumber" },
-              { title: "Weapon", dataIndex: "weaponName" },
+              { title: "Model", dataIndex: "model" },
               { title: "Type", dataIndex: "weaponType" },
-              { title: "Ownership", dataIndex: "ownershipType" },
+              {
+                title: "Ownership",
+                dataIndex: "ownershipType",
+                render: (value: string) => (value === "sibc" ? "SIBC" : "Personal"),
+              },
               {
                 title: "Status",
                 dataIndex: "status",
@@ -180,7 +184,7 @@ export default function FirearmsPage() {
                   <Tag color={status === "Assigned" ? "gold" : status === "Available" ? "green" : "red"}>{status}</Tag>
                 ),
               },
-              { title: "Location", dataIndex: "currentLocation" },
+              { title: "Current Holder", dataIndex: "currentHolderName" },
             ]}
           />
         </Card>
