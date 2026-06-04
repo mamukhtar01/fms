@@ -16,20 +16,23 @@ export default function LoginPage() {
 
   async function onFinish(values: LoginValues) {
     setIsLoading(true);
+
     try {
       const response = await fetch("/api/auth/login", {
         method: "POST",
+        credentials: "include",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(values),
       });
 
+      const payload = (await response.json()) as { message?: string };
+
       if (!response.ok) {
-        const body = (await response.json()) as { message?: string };
-        throw new Error(body.message ?? "Login failed");
+        throw new Error(payload.message ?? "Unable to authenticate");
       }
 
       message.success("Login successful");
-      router.push("/dashboard");
+      router.replace("/dashboard");
       router.refresh();
     } catch (error) {
       message.error(error instanceof Error ? error.message : "Unable to authenticate");
@@ -39,7 +42,14 @@ export default function LoginPage() {
   }
 
   return (
-    <div style={{ minHeight: "100vh", display: "grid", placeItems: "center", padding: 16 }}>
+    <div
+      style={{
+        minHeight: "100vh",
+        display: "grid",
+        placeItems: "center",
+        padding: 16,
+      }}
+    >
       <Card style={{ width: "100%", maxWidth: 460 }}>
         <Space orientation="vertical" size={4} style={{ marginBottom: 16 }}>
           <Typography.Title level={4} style={{ margin: 0 }}>
@@ -51,10 +61,18 @@ export default function LoginPage() {
         </Space>
 
         <Form<LoginValues> layout="vertical" onFinish={onFinish}>
-          <Form.Item name="email" label="Email" rules={[{ required: true, type: "email" }]}>
+          <Form.Item
+            name="email"
+            label="Email"
+            rules={[{ required: true, type: "email" }]}
+          >
             <Input placeholder="user@sibc.local" />
           </Form.Item>
-          <Form.Item name="password" label="Password" rules={[{ required: true }]}>
+          <Form.Item
+            name="password"
+            label="Password"
+            rules={[{ required: true }]}
+          >
             <Input.Password placeholder="••••••••" />
           </Form.Item>
           <Button block type="primary" htmlType="submit" loading={isLoading}>

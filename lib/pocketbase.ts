@@ -10,7 +10,11 @@ export function createPocketBaseClient() {
   if (process.env.NODE_ENV === "production" && pocketBaseUrl.startsWith("http://")) {
     throw new Error("NEXT_PUBLIC_POCKETBASE_URL must use HTTPS in production.");
   }
-  return new PocketBase(pocketBaseUrl);
+  const pb = new PocketBase(pocketBaseUrl);
+  if (typeof document !== "undefined") {
+    pb.authStore.loadFromCookie(document.cookie);
+  }
+  return pb;
 }
 
 export async function authWithPassword(email: string, password: string) {

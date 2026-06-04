@@ -1,31 +1,47 @@
-import { NextResponse } from "next/server";
-import type { NextRequest } from "next/server";
+import { NextRequest, NextResponse } from "next/server";
+import PocketBase from "pocketbase";
 
-const publicPath = "/login";
+const PUBLIC_PATHS = ["/login"];
+const DEFAULT_POCKETBASE_URL = "http://127.0.0.1:8090";
+
+function isAuthenticated(request: NextRequest) {
+  const pb = new PocketBase(
+    process.env.NEXT_PUBLIC_POCKETBASE_URL ?? DEFAULT_POCKETBASE_URL,
+  );
+
+  pb.authStore.loadFromCookie(
+    request.headers.get("cookie") || ""
+  );
+
+  return pb.authStore.isValid;
+}
 
 export function proxy(request: NextRequest) {
   const { pathname } = request.nextUrl;
-  const normalizedPath = pathname !== "/" && pathname.endsWith("/") ? pathname.slice(0, -1) : pathname;
-  const isPublicPath = normalizedPath === publicPath;
-  const hasPocketBaseSession = Boolean(request.cookies.get("pb_auth")?.value);
-  const hasRoleSession = Boolean(request.cookies.get("safms_role")?.value);
-  const hasSession = hasPocketBaseSession || hasRoleSession;
 
-  if (!hasSession && !isPublicPath && !pathname.startsWith("/api/auth")) {
-    const url = request.nextUrl.clone();
-    url.pathname = "/login";
-    return NextResponse.redirect(url);
+  const isPublic = PUBLIC_PATHS.includes(pathname);
+
+  const authenticated = isAuthenticated(request);
+
+  // Not logged in
+  if (!authenticated && !isPublic) {
+    return NextResponse.redirect(
+      new URL("/login", request.url)
+    );
   }
 
-  if (hasSession && pathname === "/login") {
-    const url = request.nextUrl.clone();
-    url.pathname = "/dashboard";
-    return NextResponse.redirect(url);
+  // Already logged in
+  if (authenticated && pathname === "/login") {
+    return NextResponse.redirect(
+      new URL("/dashboard", request.url)
+    );
   }
 
   return NextResponse.next();
 }
 
 export const config = {
-  matcher: ["/((?!_next/static|_next/image|favicon.ico).*)"],
+  matcher: [
+    "/((?!api|_next/static|_next/image|favicon.ico).*)",
+  ],
 };
