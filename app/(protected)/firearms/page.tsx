@@ -1,13 +1,19 @@
 "use client";
 
+import { FirearmOwnerLink } from "@/components/firearms/firearm-owner-link";
 import { RegisterFirearmModal } from "@/components/firearms/register-firearm-modal";
-import type { Firearm } from "@/types/domain";
+import type { Firearm, FirearmStatus } from "@/types/domain";
 import {
-  PlusCircleOutlined,
+  CheckCircleOutlined,
+  PlusOutlined,
   ReloadOutlined,
   SafetyCertificateOutlined,
+  SearchOutlined,
+  ToolOutlined,
+  UserOutlined,
 } from "@ant-design/icons";
 import {
+  Alert,
   Button,
   Card,
   Col,
@@ -22,15 +28,37 @@ import {
   Tag,
   Typography,
 } from "antd";
+import type { TableColumnsType } from "antd";
 import { useQuery } from "@tanstack/react-query";
+import Link from "next/link";
 import { useMemo, useState } from "react";
+
+const STATUS_COLORS: Record<FirearmStatus, string> = {
+  Available: "success",
+  Assigned: "warning",
+  "Under Maintenance": "processing",
+  Retired: "default",
+};
+
+const CONDITION_COLORS: Record<string, string> = {
+  Good: "green",
+  New: "blue",
+  Damaged: "red",
+};
 
 export default function FirearmsPage() {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState<string>("all");
+  const [ownershipFilter, setOwnershipFilter] = useState<string>("all");
 
-  const { data: firearms = [], isFetching: loading, refetch } = useQuery<Firearm[]>({
+  const {
+    data: firearms = [],
+    isFetching: loading,
+    refetch,
+    isError,
+    error,
+  } = useQuery<Firearm[]>({
     queryKey: ["firearms"],
     queryFn: async () => {
       const response = await fetch("/api/firearms", { cache: "no-store", credentials: "include" });
@@ -49,6 +77,7 @@ export default function FirearmsPage() {
     const term = search.trim().toLowerCase();
     return firearms.filter((firearm) => {
       const statusMatch = statusFilter === "all" || firearm.status === statusFilter;
+      const ownershipMatch = ownershipFilter === "all" || firearm.ownershipType === ownershipFilter;
       const searchMatch =
         !term ||
         firearm.firearmId.toLowerCase().includes(term) ||
@@ -56,139 +85,238 @@ export default function FirearmsPage() {
         firearm.model.toLowerCase().includes(term) ||
         firearm.weaponType.toLowerCase().includes(term) ||
         firearm.manufacturer.toLowerCase().includes(term) ||
+        firearm.ownerName.toLowerCase().includes(term) ||
         firearm.currentHolderName.toLowerCase().includes(term);
 
-      return statusMatch && searchMatch;
+      return statusMatch && ownershipMatch && searchMatch;
     });
-  }, [firearms, search, statusFilter]);
+  }, [firearms, search, statusFilter, ownershipFilter]);
 
-  const availability = useMemo(
+  const stats = useMemo(
     () => ({
       total: firearms.length,
       available: firearms.filter((item) => item.status === "Available").length,
       assigned: firearms.filter((item) => item.status === "Assigned").length,
+      personal: firearms.filter((item) => item.ownershipType === "person").length,
     }),
     [firearms],
   );
 
+  const columns: TableColumnsType<Firearm> = [
+    {
+      title: "Firearm ID",
+      dataIndex: "firearmId",
+      fixed: "left",
+      width: 140,
+      render: (value: string) => <Typography.Text strong>{value}</Typography.Text>,
+    },
+    {
+      title: "Serial",
+      dataIndex: "serialNumber",
+      width: 130,
+      ellipsis: true,
+    },
+    {
+      title: "Type / Model",
+      key: "typeModel",
+      width: 160,
+      render: (_, row) => (
+        <Space orientation="vertical" size={0}>
+          <Typography.Text>{row.weaponType}</Typography.Text>
+          <Typography.Text type="secondary" style={{ fontSize: 12 }}>
+            {row.model}
+          </Typography.Text>
+        </Space>
+      ),
+    },
+    {
+      title: "Owner",
+      key: "owner",
+      width: 180,
+      render: (_, row) => <FirearmOwnerLink firearm={row} />,
+    },
+    {
+      title: "Ownership",
+      dataIndex: "ownershipType",
+      width: 110,
+      render: (value: string) =>
+        value === "sibc" ? <Tag color="processing">SIBC</Tag> : <Tag color="purple">Personal</Tag>,
+    },
+    {
+      title: "Status",
+      dataIndex: "status",
+      width: 150,
+      render: (status: FirearmStatus) => <Tag color={STATUS_COLORS[status]}>{status}</Tag>,
+    },
+    {
+      title: "Condition",
+      dataIndex: "condition",
+      width: 100,
+      render: (condition: string) => <Tag color={CONDITION_COLORS[condition] ?? "default"}>{condition}</Tag>,
+    },
+    {
+      title: "Current holder",
+      key: "holder",
+      width: 160,
+      ellipsis: true,
+      render: (_, row) =>
+        row.currentHolderId ? (
+          <Link href={`/personnel/${row.currentHolderId}`}>
+            <Typography.Link>{row.currentHolderName || "View holder"}</Typography.Link>
+          </Link>
+        ) : (
+          <Typography.Text type="secondary">—</Typography.Text>
+        ),
+    },
+  ];
+
   return (
-    <Row gutter={[16, 16]}>
-      <Col span={24}>
-        <Card
-          styles={{ body: { padding: 20 } }}
-          style={{
-            border: "none",
-            background:
-              "linear-gradient(120deg, rgba(31,59,138,0.98) 0%, rgba(18,107,132,0.98) 55%, rgba(16,139,97,0.95) 100%)",
-          }}
-        >
-          <Flex justify="space-between" align="center" wrap="wrap" gap={16}>
-            <Space orientation="vertical" size={2}>
-              <Typography.Title level={3} style={{ margin: 0, color: "#f3fbff" }}>
-                Firearm Operations
-              </Typography.Title>
-              <Typography.Text style={{ color: "#d9edf5" }}>
-                Register, track, and monitor all firearm assets from a single operational view.
-              </Typography.Text>
-            </Space>
-            <Button
-              type="primary"
-              size="large"
-              icon={<PlusCircleOutlined />}
-              style={{ background: "#f5f8ff", color: "#143472", borderColor: "#f5f8ff", fontWeight: 600 }}
-              onClick={() => setIsModalOpen(true)}
-            >
-              Register Firearm
+    <Space orientation="vertical" size={16} style={{ width: "100%" }}>
+      <Card bordered={false} styles={{ body: { padding: "24px 28px" } }}>
+        <Flex justify="space-between" align="flex-start" wrap="wrap" gap={16}>
+          <div>
+            <Typography.Title level={3} style={{ margin: 0 }}>
+              Firearms inventory
+            </Typography.Title>
+            <Typography.Text type="secondary">
+              Browse registered weapons, filter by status, and open owner profiles from the list.
+            </Typography.Text>
+          </div>
+          <Space wrap>
+            <Button icon={<ReloadOutlined />} onClick={() => void refetch()} loading={loading}>
+              Refresh
             </Button>
-          </Flex>
-        </Card>
-      </Col>
+            <Button type="primary" icon={<PlusOutlined />} size="large" onClick={() => setIsModalOpen(true)}>
+              Register firearm
+            </Button>
+          </Space>
+        </Flex>
+      </Card>
 
-      <Col xs={24} md={8}>
-        <Card>
-          <Statistic title="Total Firearms" value={availability.total} prefix={<SafetyCertificateOutlined />} />
-        </Card>
-      </Col>
-      <Col xs={24} md={8}>
-        <Card>
-          <Statistic title="Available" value={availability.available} valueStyle={{ color: "#1f8f5f" }} />
-        </Card>
-      </Col>
-      <Col xs={24} md={8}>
-        <Card>
-          <Statistic title="Assigned" value={availability.assigned} valueStyle={{ color: "#c28a1c" }} />
-        </Card>
-      </Col>
+      <Row gutter={[16, 16]}>
+        <Col xs={12} sm={6}>
+          <Card size="small">
+            <Statistic
+              title="Total"
+              value={stats.total}
+              prefix={<SafetyCertificateOutlined style={{ color: "#1677ff" }} />}
+            />
+          </Card>
+        </Col>
+        <Col xs={12} sm={6}>
+          <Card size="small">
+            <Statistic
+              title="Available"
+              value={stats.available}
+              prefix={<CheckCircleOutlined style={{ color: "#52c41a" }} />}
+              styles={{ content: { color: "#389e0d" } }}
+            />
+          </Card>
+        </Col>
+        <Col xs={12} sm={6}>
+          <Card size="small">
+            <Statistic
+              title="Assigned"
+              value={stats.assigned}
+              prefix={<UserOutlined style={{ color: "#faad14" }} />}
+              styles={{ content: { color: "#d48806" } }}
+            />
+          </Card>
+        </Col>
+        <Col xs={12} sm={6}>
+          <Card size="small">
+            <Statistic
+              title="Personal"
+              value={stats.personal}
+              prefix={<ToolOutlined style={{ color: "#722ed1" }} />}
+            />
+          </Card>
+        </Col>
+      </Row>
 
-      <Col span={24}>
-        <Card
-          title="Firearm Inventory"
-          extra={<Button icon={<ReloadOutlined />} onClick={() => void refetch()}>Refresh</Button>}
-        >
-          <Row gutter={[12, 12]} style={{ marginBottom: 16 }}>
-            <Col xs={24} md={16}>
-              <Input.Search
-                allowClear
-                placeholder="Search by firearm ID, serial, type, model, manufacturer, or holder"
-                onSearch={setSearch}
-                onChange={(event) => setSearch(event.target.value)}
-                value={search}
-              />
-            </Col>
-            <Col xs={24} md={8}>
-              <Select
-                style={{ width: "100%" }}
-                value={statusFilter}
-                onChange={setStatusFilter}
-                options={[
-                  { value: "all", label: "All Statuses" },
-                  { value: "Available", label: "Available" },
-                  { value: "Assigned", label: "Assigned" },
-                  { value: "Under Maintenance", label: "Under Maintenance" },
-                  { value: "Retired", label: "Retired" },
-                ]}
-              />
-            </Col>
-          </Row>
+      {isError ? (
+        <Alert
+          type="error"
+          showIcon
+          message="Could not load firearms"
+          description={error instanceof Error ? error.message : "Please try again."}
+          action={
+            <Button size="small" onClick={() => void refetch()}>
+              Retry
+            </Button>
+          }
+        />
+      ) : null}
 
-          <Table
-            loading={loading}
-            rowKey="id"
-            dataSource={filteredFirearms}
-            locale={{
-              emptyText: (
-                <Empty
-                  image={Empty.PRESENTED_IMAGE_SIMPLE}
-                  description={
-                    search || statusFilter !== "all"
-                      ? "No firearms matched your filters"
-                      : "No firearms found in the collection"
-                  }
-                />
-              ),
-            }}
-            columns={[
-              { title: "Firearm ID", dataIndex: "firearmId" },
-              { title: "Serial Number", dataIndex: "serialNumber" },
-              { title: "Model", dataIndex: "model" },
-              { title: "Type", dataIndex: "weaponType" },
-              {
-                title: "Ownership",
-                dataIndex: "ownershipType",
-                render: (value: string) => (value === "sibc" ? "SIBC" : "Personal"),
-              },
-              {
-                title: "Status",
-                dataIndex: "status",
-                render: (status: string) => (
-                  <Tag color={status === "Assigned" ? "gold" : status === "Available" ? "green" : "red"}>{status}</Tag>
-                ),
-              },
-              { title: "Current Holder", dataIndex: "currentHolderName" },
+      <Card
+        title={`Registered firearms (${filteredFirearms.length})`}
+        styles={{ body: { paddingTop: 8 } }}
+      >
+        <Flex gap={12} wrap="wrap" style={{ marginBottom: 16 }}>
+          <Input
+            allowClear
+            prefix={<SearchOutlined style={{ color: "#bfbfbf" }} />}
+            placeholder="Search ID, serial, model, owner, holder…"
+            value={search}
+            onChange={(event) => setSearch(event.target.value)}
+            style={{ flex: "1 1 240px", maxWidth: 420 }}
+          />
+          <Select
+            value={statusFilter}
+            onChange={setStatusFilter}
+            style={{ width: 180 }}
+            options={[
+              { value: "all", label: "All statuses" },
+              { value: "Available", label: "Available" },
+              { value: "Assigned", label: "Assigned" },
+              { value: "Under Maintenance", label: "Under Maintenance" },
+              { value: "Retired", label: "Retired" },
             ]}
           />
-        </Card>
-      </Col>
+          <Select
+            value={ownershipFilter}
+            onChange={setOwnershipFilter}
+            style={{ width: 160 }}
+            options={[
+              { value: "all", label: "All ownership" },
+              { value: "sibc", label: "SIBC" },
+              { value: "person", label: "Personal" },
+            ]}
+          />
+        </Flex>
+
+        <Table<Firearm>
+          loading={loading}
+          rowKey="id"
+          size="middle"
+          scroll={{ x: 1100 }}
+          pagination={{
+            pageSize: 10,
+            showSizeChanger: true,
+            showTotal: (total) => `${total} firearms`,
+          }}
+          dataSource={filteredFirearms}
+          columns={columns}
+          locale={{
+            emptyText: (
+              <Empty
+                image={Empty.PRESENTED_IMAGE_SIMPLE}
+                description={
+                  search || statusFilter !== "all" || ownershipFilter !== "all"
+                    ? "No firearms match your filters"
+                    : "No firearms registered yet"
+                }
+              >
+                {!search && statusFilter === "all" && ownershipFilter === "all" ? (
+                  <Button type="primary" icon={<PlusOutlined />} onClick={() => setIsModalOpen(true)}>
+                    Register first firearm
+                  </Button>
+                ) : null}
+              </Empty>
+            ),
+          }}
+        />
+      </Card>
 
       <RegisterFirearmModal
         open={isModalOpen}
@@ -197,6 +325,6 @@ export default function FirearmsPage() {
           await refetch();
         }}
       />
-    </Row>
+    </Space>
   );
 }

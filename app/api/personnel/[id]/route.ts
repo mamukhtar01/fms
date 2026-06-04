@@ -4,20 +4,24 @@ import { toDomainPersonnel } from "@/lib/mappers/personnel";
 import { ClientResponseError } from "pocketbase";
 import { NextResponse } from "next/server";
 
-export async function GET(request: Request) {
+type RouteContext = { params: Promise<{ id: string }> };
+
+export async function GET(request: Request, context: RouteContext) {
   try {
+    const { id } = await context.params;
     const pb = createPocketBaseServerClient(request.headers.get("cookie"));
 
     if (!pb.authStore.isValid) {
       return NextResponse.json({ message: "Unauthorized" }, { status: 401 });
     }
 
-    const records = await pb.collection("personnel").getFullList<Record<string, unknown>>({
-      sort: "full_name",
-    });
+    const record = await pb.collection("personnel").getOne<Record<string, unknown>>(id);
 
-    return NextResponse.json({ items: records.map(toDomainPersonnel) });
+    return NextResponse.json({ item: toDomainPersonnel(record) });
   } catch (error) {
+    if (error instanceof ClientResponseError && error.status === 404) {
+      return NextResponse.json({ message: "Personnel record not found" }, { status: 404 });
+    }
     if (error instanceof ClientResponseError) {
       return NextResponse.json(
         { message: pocketBaseErrorMessage(error) },
