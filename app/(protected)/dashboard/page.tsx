@@ -1,7 +1,15 @@
 "use client";
 
 import { dashboardKpis, assignments, movements } from "@/data/mock";
-import { Alert, Card, Col, List, Row, Statistic, Table, Tag, Typography } from "antd";
+import {
+  Alert,
+  Card,
+  Col,
+  Row,
+  Statistic,
+  Table,
+  Tag,
+} from "antd";
 import dayjs from "dayjs";
 
 export default function DashboardPage() {
@@ -10,7 +18,11 @@ export default function DashboardPage() {
       {dashboardKpis.map((kpi) => (
         <Col key={kpi.key} xs={24} sm={12} lg={8} xl={6}>
           <Card>
-            <Statistic title={kpi.title} value={kpi.value} styles={{ content: { color: kpi.color } }} />
+            <Statistic
+              title={kpi.title}
+              value={kpi.value}
+              styles={{ content: { color: kpi.color } }}
+            />
           </Card>
         </Col>
       ))}
@@ -29,7 +41,11 @@ export default function DashboardPage() {
               {
                 title: "Status",
                 dataIndex: "status",
-                render: (status: string) => <Tag color={status === "Overdue" ? "red" : "blue"}>{status}</Tag>,
+                render: (status: string) => (
+                  <Tag color={status === "Overdue" ? "red" : "blue"}>
+                    {status}
+                  </Tag>
+                ),
               },
             ]}
           />
@@ -38,16 +54,24 @@ export default function DashboardPage() {
 
       <Col xs={24} lg={12}>
         <Card title="Movement Activity">
-          <List
+          <Table
+            size="small"
+            pagination={false}
+            rowKey="id"
             dataSource={movements}
-            renderItem={(event) => (
-              <List.Item>
-                <List.Item.Meta
-                  title={`${event.firearmId} • ${event.movementType}`}
-                  description={`${dayjs(event.movementDateTime).format("DD-MMM-YYYY HH:mm")} by ${event.performedBy}`}
-                />
-              </List.Item>
-            )}
+            columns={[
+              {
+                title: "Movement",
+                key: "movement",
+                render: (_, event) => `${event.firearmId} • ${event.movementType}`,
+              },
+              {
+                title: "Details",
+                key: "details",
+                render: (_, event) =>
+                  `${dayjs(event.movementDateTime).format("DD-MMM-YYYY HH:mm")} by ${event.performedBy}`,
+              },
+            ]}
           />
         </Card>
       </Col>
@@ -56,12 +80,8 @@ export default function DashboardPage() {
         <Alert
           type="info"
           showIcon
-          title="Dashboard charts and report widgets are ready for live PocketBase data wiring."
-          description={
-            <Typography.Text>
-              Monthly assignment trends, ammunition usage and accessory discrepancies are structured in the data model and can be populated with collection queries.
-            </Typography.Text>
-          }
+          title="Refresh to see the latest updates on firearm assignments and movements."
+       
         />
       </Col>
     </Row>
