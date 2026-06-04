@@ -23,12 +23,14 @@ export async function GET(request: Request, context: RouteContext) {
       return NextResponse.json({ message: "Personnel record not found" }, { status: 404 });
     }
     if (error instanceof ClientResponseError) {
+      console.error("GET /api/personnel/[id] failed", error.status, error.response?.data);
       return NextResponse.json(
         { message: pocketBaseErrorMessage(error) },
         { status: error.status || 500 },
       );
     }
 
+    console.error("GET /api/personnel/[id] failed", error);
     return NextResponse.json({ message: "Unable to load personnel" }, { status: 500 });
   }
 }

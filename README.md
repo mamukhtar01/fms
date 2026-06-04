@@ -74,6 +74,7 @@ npm run dev
 - Run PocketBase and import `pocketbase/schema.json` collection definitions.
 - Load `pocketbase/seed.json` as initial data (or map through your migration scripts).
 - Ensure `users.role` values are `ADMIN` or `OFFICER`.
+- For the `personnel` collection, set API rules so authenticated users can list/view records (see `listRule` / `viewRule` in `pocketbase/schema.json`). Empty rules restrict access to superusers only and the app will show a PocketBase error on the Personnel page.
 
 ## Docker Deployment
 

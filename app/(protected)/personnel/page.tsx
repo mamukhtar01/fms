@@ -1,68 +1,198 @@
 "use client";
 
-import { personnel } from "@/data/mock";
-import { Button, Card, Form, Input, Row, Col, Select, Table } from "antd";
+import { AddPersonnelModal } from "@/components/personnel/add-personnel-modal";
+import type { Personnel, PersonnelStatus } from "@/types/domain";
+import { PlusOutlined, ReloadOutlined, SearchOutlined } from "@ant-design/icons";
+import {
+  Alert,
+  Button,
+  Card,
+  Empty,
+  Flex,
+  Input,
+  Select,
+  Space,
+  Table,
+  Tag,
+  Typography,
+} from "antd";
+import type { TableColumnsType } from "antd";
+import { useQuery } from "@tanstack/react-query";
+import { useRouter } from "next/navigation";
+import { useMemo, useState } from "react";
+
+const STATUS_COLORS: Record<PersonnelStatus, string> = {
+  Active: "success",
+  Inactive: "default",
+};
 
 export default function PersonnelPage() {
+  const router = useRouter();
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [search, setSearch] = useState("");
+  const [statusFilter, setStatusFilter] = useState<string>("all");
+
+  const {
+    data: personnel = [],
+    isFetching: loading,
+    refetch,
+    isError,
+    error,
+  } = useQuery<Personnel[]>({
+    queryKey: ["personnel"],
+    queryFn: async () => {
+      const response = await fetch("/api/personnel", { cache: "no-store", credentials: "include" });
+      const payload = (await response.json()) as { items?: Personnel[]; message?: string };
+
+      if (!response.ok) {
+        throw new Error(payload.message ?? "Failed to load personnel");
+      }
+
+      return payload.items ?? [];
+    },
+    retry: false,
+  });
+
+  const filteredPersonnel = useMemo(() => {
+    const term = search.trim().toLowerCase();
+    return personnel.filter((person) => {
+      const statusMatch = statusFilter === "all" || person.status === statusFilter;
+      const searchMatch =
+        !term ||
+        person.personnelId.toLowerCase().includes(term) ||
+        person.fullName.toLowerCase().includes(term) ||
+        person.rank.toLowerCase().includes(term) ||
+        person.position.toLowerCase().includes(term) ||
+        person.department.toLowerCase().includes(term) ||
+        person.phone.toLowerCase().includes(term);
+
+      return statusMatch && searchMatch;
+    });
+  }, [personnel, search, statusFilter]);
+
+  const columns: TableColumnsType<Personnel> = [
+    {
+      title: "Personnel ID",
+      dataIndex: "personnelId",
+      width: 130,
+      render: (value: string) => <Typography.Text strong>{value}</Typography.Text>,
+    },
+    { title: "Full Name", dataIndex: "fullName", width: 180, ellipsis: true },
+    { title: "Rank", dataIndex: "rank", width: 120 },
+    { title: "Position", dataIndex: "position", width: 140, ellipsis: true },
+    { title: "Department", dataIndex: "department", width: 160, ellipsis: true },
+    { title: "Phone", dataIndex: "phone", width: 150 },
+    {
+      title: "Status",
+      dataIndex: "status",
+      width: 100,
+      render: (status: PersonnelStatus) => <Tag color={STATUS_COLORS[status] ?? "default"}>{status}</Tag>,
+    },
+  ];
+
   return (
-    <Row gutter={[16, 16]}>
-      <Col span={24}>
-        <Card title="Personnel Directory">
-          <Table
-            rowKey="id"
-            dataSource={personnel}
-            columns={[
-              { title: "Personnel ID", dataIndex: "personnelId" },
-              { title: "Full Name", dataIndex: "fullName" },
-              { title: "Rank", dataIndex: "rank" },
-              { title: "Position", dataIndex: "position" },
-              { title: "Department", dataIndex: "department" },
-              { title: "Phone", dataIndex: "phone" },
-              { title: "Status", dataIndex: "status" },
+    <Space orientation="vertical" size={16} style={{ width: "100%" }}>
+      <Card bordered={false} styles={{ body: { padding: "24px 28px" } }}>
+        <Flex justify="space-between" align="flex-start" wrap="wrap" gap={16}>
+          <div>
+            <Typography.Title level={3} style={{ margin: 0 }}>
+              Personnel directory
+            </Typography.Title>
+            <Typography.Text type="secondary">
+              Browse armoury personnel, add new records, and open profiles from the list.
+            </Typography.Text>
+          </div>
+          <Space wrap>
+            <Button icon={<ReloadOutlined />} onClick={() => void refetch()} loading={loading}>
+              Refresh
+            </Button>
+            <Button type="primary" icon={<PlusOutlined />} size="large" onClick={() => setIsModalOpen(true)}>
+              Add personnel
+            </Button>
+          </Space>
+        </Flex>
+      </Card>
+
+      {isError ? (
+        <Alert
+          type="error"
+          showIcon
+          message="Could not load personnel"
+          description={error instanceof Error ? error.message : "Please try again."}
+          action={
+            <Button size="small" onClick={() => void refetch()}>
+              Retry
+            </Button>
+          }
+        />
+      ) : null}
+
+      <Card title={`Personnel (${filteredPersonnel.length})`} styles={{ body: { paddingTop: 8 } }}>
+        <Flex gap={12} wrap="wrap" style={{ marginBottom: 16 }}>
+          <Input
+            allowClear
+            prefix={<SearchOutlined style={{ color: "#bfbfbf" }} />}
+            placeholder="Search ID, name, rank, department…"
+            value={search}
+            onChange={(event) => setSearch(event.target.value)}
+            style={{ flex: "1 1 240px", maxWidth: 420 }}
+          />
+          <Select
+            value={statusFilter}
+            onChange={setStatusFilter}
+            style={{ width: 160 }}
+            options={[
+              { value: "all", label: "All statuses" },
+              { value: "Active", label: "Active" },
+              { value: "Inactive", label: "Inactive" },
             ]}
           />
-        </Card>
-      </Col>
+        </Flex>
 
-      <Col span={24}>
-        <Card title="Add Personnel">
-          <Form layout="vertical">
-            <Row gutter={16}>
-              <Col xs={24} md={8}>
-                <Form.Item label="Personnel ID" name="personnelId" rules={[{ required: true }]}>
-                  <Input />
-                </Form.Item>
-              </Col>
-              <Col xs={24} md={8}>
-                <Form.Item label="Full Name" name="fullName" rules={[{ required: true }]}>
-                  <Input />
-                </Form.Item>
-              </Col>
-              <Col xs={24} md={8}>
-                <Form.Item label="Rank" name="rank" rules={[{ required: true }]}>
-                  <Input />
-                </Form.Item>
-              </Col>
-              <Col xs={24} md={8}>
-                <Form.Item label="Department" name="department" rules={[{ required: true }]}>
-                  <Input />
-                </Form.Item>
-              </Col>
-              <Col xs={24} md={8}>
-                <Form.Item label="Phone Number" name="phone" rules={[{ required: true }]}>
-                  <Input />
-                </Form.Item>
-              </Col>
-              <Col xs={24} md={8}>
-                <Form.Item label="Status" name="status" initialValue="Active">
-                  <Select options={[{ value: "Active" }, { value: "Inactive" }]} />
-                </Form.Item>
-              </Col>
-            </Row>
-            <Button type="primary">Save Personnel</Button>
-          </Form>
-        </Card>
-      </Col>
-    </Row>
+        <Table<Personnel>
+          loading={loading}
+          rowKey="id"
+          size="middle"
+          scroll={{ x: 900 }}
+          pagination={{
+            pageSize: 10,
+            showSizeChanger: true,
+            showTotal: (total) => `${total} personnel`,
+          }}
+          dataSource={filteredPersonnel}
+          columns={columns}
+          onRow={(record) => ({
+            onClick: () => router.push(`/personnel/${record.id}`),
+            style: { cursor: "pointer" },
+          })}
+          locale={{
+            emptyText: (
+              <Empty
+                image={Empty.PRESENTED_IMAGE_SIMPLE}
+                description={
+                  search || statusFilter !== "all"
+                    ? "No personnel match your filters"
+                    : "No personnel records yet"
+                }
+              >
+                {!search && statusFilter === "all" ? (
+                  <Button type="primary" icon={<PlusOutlined />} onClick={() => setIsModalOpen(true)}>
+                    Add first personnel
+                  </Button>
+                ) : null}
+              </Empty>
+            ),
+          }}
+        />
+      </Card>
+
+      <AddPersonnelModal
+        open={isModalOpen}
+        onCancel={() => setIsModalOpen(false)}
+        onSaved={async () => {
+          await refetch();
+        }}
+      />
+    </Space>
   );
 }

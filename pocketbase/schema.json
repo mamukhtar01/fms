@@ -13,6 +13,11 @@
     {
       "name": "personnel",
       "type": "base",
+      "listRule": "@request.auth.id != \"\"",
+      "viewRule": "@request.auth.id != \"\"",
+      "createRule": "@request.auth.id != \"\"",
+      "updateRule": "@request.auth.id != \"\"",
+      "deleteRule": "@request.auth.role = \"ADMIN\"",
       "schema": [
         { "name": "personnel_id", "type": "text", "required": true },
         { "name": "full_name", "type": "text", "required": true },

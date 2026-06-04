@@ -56,7 +56,7 @@ export interface Firearm {
   updated?: string;
 }
 
-export type PersonnelStatus = "Active" | "inactive";
+export type PersonnelStatus = "Active" | "Inactive";
 
 export interface Personnel {
   id: string;

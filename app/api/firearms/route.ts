@@ -90,7 +90,10 @@ async function loadPersonnelNames(pb: ReturnType<typeof createPocketBaseServerCl
 
   try {
     const filter = uniqueIds.map((id) => `id="${id}"`).join(" || ");
-    const rows = await pb.collection("personnel").getFullList<Record<string, unknown>>({ filter });
+    const rows = await pb.collection("personnel").getFullList<Record<string, unknown>>({
+      filter,
+      sort: "-id",
+    });
     for (const row of rows) {
       names.set(String(row.id), String(row.full_name ?? ""));
     }
