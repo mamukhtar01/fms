@@ -1,13 +1,14 @@
 "use client";
 
-import type { PersonnelStatus } from "@/types/domain";
+import type { Personnel, PersonnelStatus } from "@/types/domain";
 import { App, Button, Col, Form, Input, Modal, Row, Select } from "antd";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 
 interface AddPersonnelModalProps {
   open: boolean;
   onCancel: () => void;
   onSaved: () => Promise<void> | void;
+  personnel?: Personnel;
 }
 
 interface AddPersonnelFormValues {
@@ -23,17 +24,39 @@ interface AddPersonnelFormValues {
 
 const statusOptions: PersonnelStatus[] = ["Active", "Inactive"];
 
-export function AddPersonnelModal({ open, onCancel, onSaved }: AddPersonnelModalProps) {
+export function AddPersonnelModal({ open, onCancel, onSaved, personnel }: AddPersonnelModalProps) {
   const [form] = Form.useForm<AddPersonnelFormValues>();
   const { message } = App.useApp();
   const [submitting, setSubmitting] = useState(false);
+
+  useEffect(() => {
+    if (open) {
+      if (personnel) {
+        form.setFieldsValue({
+          personnelId: personnel.personnelId,
+          fullName: personnel.fullName,
+          rank: personnel.rank,
+          position: personnel.position,
+          department: personnel.department,
+          phone: personnel.phone,
+          nationalId: personnel.nationalId,
+          status: personnel.status,
+        });
+      } else {
+        form.resetFields();
+      }
+    }
+  }, [open, personnel, form]);
 
   async function handleSubmit(values: AddPersonnelFormValues) {
     setSubmitting(true);
 
     try {
-      const response = await fetch("/api/personnel", {
-        method: "POST",
+      const url = personnel ? `/api/personnel/${personnel.id}` : "/api/personnel";
+      const method = personnel ? "PUT" : "POST";
+
+      const response = await fetch(url, {
+        method,
         credentials: "include",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(values),
@@ -45,7 +68,7 @@ export function AddPersonnelModal({ open, onCancel, onSaved }: AddPersonnelModal
         throw new Error(payload.message ?? "Failed to save personnel");
       }
 
-      message.success("Personnel saved successfully");
+      message.success(personnel ? "Personnel updated successfully" : "Personnel saved successfully");
       form.resetFields();
       onCancel();
       await onSaved();
@@ -58,7 +81,7 @@ export function AddPersonnelModal({ open, onCancel, onSaved }: AddPersonnelModal
 
   return (
     <Modal
-      title="Add Personnel"
+      title={personnel ? "Edit Personnel" : "Add Personnel"}
       open={open}
       onCancel={onCancel}
       width={720}
@@ -141,7 +164,7 @@ export function AddPersonnelModal({ open, onCancel, onSaved }: AddPersonnelModal
           </Col>
           <Col>
             <Button type="primary" htmlType="submit" loading={submitting}>
-              Save Personnel
+              {personnel ? "Save Changes" : "Save Personnel"}
             </Button>
           </Col>
         </Row>

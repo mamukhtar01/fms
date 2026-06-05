@@ -92,22 +92,19 @@ export default function PersonnelPage() {
 
   return (
     <Space orientation="vertical" size={16} style={{ width: "100%" }}>
-      <Card bordered={false} styles={{ body: { padding: "24px 28px" } }}>
+      <Card styles={{ body: { padding: "24px 28px" } }}>
         <Flex justify="space-between" align="flex-start" wrap="wrap" gap={16}>
           <div>
             <Typography.Title level={3} style={{ margin: 0 }}>
               Personnel directory
-            </Typography.Title>
-            <Typography.Text type="secondary">
-              Browse armoury personnel, add new records, and open profiles from the list.
-            </Typography.Text>
+            </Typography.Title>          
           </div>
           <Space wrap>
             <Button icon={<ReloadOutlined />} onClick={() => void refetch()} loading={loading}>
               Refresh
             </Button>
             <Button type="primary" icon={<PlusOutlined />} size="large" onClick={() => setIsModalOpen(true)}>
-              Add personnel
+              Add
             </Button>
           </Space>
         </Flex>
@@ -117,7 +114,7 @@ export default function PersonnelPage() {
         <Alert
           type="error"
           showIcon
-          message="Could not load personnel"
+          title="Could not load personnel"
           description={error instanceof Error ? error.message : "Please try again."}
           action={
             <Button size="small" onClick={() => void refetch()}>

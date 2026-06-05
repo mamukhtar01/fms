@@ -1,19 +1,22 @@
 "use client";
 
 import type { Personnel } from "@/types/domain";
-import { ArrowLeftOutlined } from "@ant-design/icons";
+import { AddPersonnelModal } from "@/components/personnel/add-personnel-modal";
+import { ArrowLeftOutlined, EditOutlined } from "@ant-design/icons";
 import { useQuery } from "@tanstack/react-query";
 import { Breadcrumb, Button, Card, Descriptions, Empty, Skeleton, Space, Tag, Typography } from "antd";
 import dayjs from "dayjs";
 import Link from "next/link";
 import { useParams, useRouter } from "next/navigation";
+import { useState } from "react";
 
 export default function PersonnelDetailPage() {
   const params = useParams<{ id: string }>();
   const router = useRouter();
   const personnelId = params.id;
+  const [isEditModalOpen, setIsEditModalOpen] = useState(false);
 
-  const { data: person, isLoading, isError, error } = useQuery<Personnel>({
+  const { data: person, isLoading, isError, error, refetch } = useQuery<Personnel>({
     queryKey: ["personnel", personnelId],
     queryFn: async () => {
       const response = await fetch(`/api/personnel/${personnelId}`, {
@@ -42,7 +45,7 @@ export default function PersonnelDetailPage() {
         ]}
       />
 
-      <Card bordered={false} styles={{ body: { padding: "20px 24px" } }}>
+      <Card styles={{ body: { padding: "20px 24px" } }}>
         <Space style={{ width: "100%", justifyContent: "space-between" }} wrap>
           <div>
             <Typography.Title level={3} style={{ margin: 0 }}>
@@ -52,9 +55,19 @@ export default function PersonnelDetailPage() {
               Owner and assignment details for armoury personnel.
             </Typography.Text>
           </div>
-          <Button icon={<ArrowLeftOutlined />} onClick={() => router.push("/personnel")}>
-            Back to directory
-          </Button>
+          <Space wrap>
+            <Button
+              type="primary"
+              icon={<EditOutlined />}
+              onClick={() => setIsEditModalOpen(true)}
+              disabled={isLoading || isError || !person}
+            >
+              Edit
+            </Button>
+            <Button icon={<ArrowLeftOutlined />} onClick={() => router.push("/personnel")}>
+              Back to directory
+            </Button>
+          </Space>
         </Space>
       </Card>
 
@@ -95,6 +108,17 @@ export default function PersonnelDetailPage() {
           </Descriptions>
         ) : null}
       </Card>
+
+      {person ? (
+        <AddPersonnelModal
+          open={isEditModalOpen}
+          onCancel={() => setIsEditModalOpen(false)}
+          personnel={person}
+          onSaved={async () => {
+            await refetch();
+          }}
+        />
+      ) : null}
     </Space>
   );
 }
