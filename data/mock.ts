@@ -108,6 +108,7 @@ export const assignments: FirearmAssignment[] = [
     status: "Active",
     issueCondition: "Excellent",
     remarks: "",
+    purpose: "Airport Security Patrol",
     notes: "",
   },
   {
@@ -122,6 +123,7 @@ export const assignments: FirearmAssignment[] = [
     status: "Overdue",
     issueCondition: "Good",
     remarks: "",
+    purpose: "Storekeeper Guard Duty",
     notes: "",
   },
 ];

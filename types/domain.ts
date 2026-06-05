@@ -77,8 +77,13 @@ export type AssignmentStatus = "Active" | "Returned" | "Overdue";
 
 export interface FirearmAssignment {
   id: string;
+  assignmentNumber?: string;
   firearmId: string;
+  firearmCode?: string;
+  firearmModel?: string;
+  firearmSerial?: string;
   officerId: string;
+  officerCode?: string;
   officerName: string;
   assignedById: string;
   assignedByName: string;
@@ -88,8 +93,14 @@ export interface FirearmAssignment {
   issueCondition: AssignmentCondition;
   returnCondition?: AssignmentCondition;
   remarks: string;
+  purpose: string;
   status: AssignmentStatus;
   notes: string;
+  ammunitionType?: string;
+  quantityIssued?: number;
+  quantityReturned?: number;
+  quantityExpended?: number;
+  quantityMissing?: number;
 }
 
 export type MovementType = "IN" | "OUT";
