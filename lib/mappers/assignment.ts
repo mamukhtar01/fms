@@ -9,7 +9,7 @@ export function toDomainAssignment(
   const officer = expand?.officer_id as Record<string, unknown> | undefined;
   const assignedBy = expand?.assigned_by as Record<string, unknown> | undefined;
 
-  const ammo = ammoMap?.get(record.id);
+  const ammo = ammoMap?.get(String(record.id));
 
   return {
     id: String(record.id ?? ""),
