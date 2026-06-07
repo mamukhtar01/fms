@@ -155,8 +155,11 @@ export default function FirearmsPage() {
       ellipsis: true,
       render: (_, row) =>
         row.currentHolderId ? (
-          <Link href={`/personnel/profile?id=${row.currentHolderId}`}>
-            <Typography.Link>{row.currentHolderName || "View holder"}</Typography.Link>
+          <Link
+            href={`/personnel/profile?id=${row.currentHolderId}`}
+            style={{ color: "#1677ff" }}
+          >
+            {row.currentHolderName || "View holder"}
           </Link>
         ) : (
           <Typography.Text type="secondary">—</Typography.Text>

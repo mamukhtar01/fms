@@ -235,7 +235,7 @@ export default function DashboardPage() {
   const isRefreshing = loadingFirearms || loadingPersonnel || loadingAssignments;
 
   return (
-    <Space direction="vertical" size={16} style={{ width: "100%" }}>
+    <Space orientation="vertical" size={16} style={{ width: "100%" }}>
       <Card variant="borderless" styles={{ body: { padding: "24px 28px" } }}>
         <Flex justify="space-between" align="center" wrap="wrap" gap={12}>
           <div>
