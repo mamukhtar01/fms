@@ -26,9 +26,7 @@ const menuItems: MenuItem[] = [
   { key: "/assignments", icon: <AuditOutlined />, label: "Assignments" },
   { key: "/ammunition", icon: <AuditOutlined />, label: "Ammunition" },
   { key: "/accessories", icon: <AuditOutlined />, label: "Accessories" },
-  { key: "/ownership", icon: <AuditOutlined />, label: "Ownership" },
   { key: "/history", icon: <HistoryOutlined />, label: "History" },
-  { key: "/reports", icon: <AuditOutlined />, label: "Reports" },
   { key: "/users", icon: <TeamOutlined />, label: "Users" },
   { key: "/settings", icon: <SettingOutlined />, label: "Settings" },
 ];
