@@ -1,5 +1,6 @@
 "use client";
 
+import { logout } from "@/lib/services/auth";
 import {
   AppstoreOutlined,
   AuditOutlined,
@@ -41,13 +42,13 @@ export function AppShell({ children }: { children: React.ReactNode }) {
     return matched ? [String(matched.key)] : ["/dashboard"];
   }, [pathname]);
 
-  async function logout() {
-    await fetch("/api/auth/logout", { method: "POST" });
+  function handleLogout() {
+    logout();
     router.push("/login");
   }
 
   return (
-    <Layout style={{ minHeight: "100vh"}}>
+    <Layout style={{ minHeight: "100vh" }}>
       <Sider breakpoint="lg" collapsedWidth="0">
         <div style={{ color: "white", padding: 16, fontWeight: 700 }}>SIBC AFMS</div>
         <Menu
@@ -73,7 +74,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
               SIBC Armoury & Firearms Management System
             </Typography.Title>
           </Space>
-          <Button icon={<LogoutOutlined />} onClick={logout}>
+          <Button icon={<LogoutOutlined />} onClick={handleLogout}>
             Logout
           </Button>
         </Header>

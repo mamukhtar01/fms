@@ -2,6 +2,7 @@
 
 import { FirearmOwnerLink } from "@/components/firearms/firearm-owner-link";
 import { RegisterFirearmModal } from "@/components/firearms/register-firearm-modal";
+import { getFirearms } from "@/lib/services/firearms";
 import type { Firearm, FirearmStatus } from "@/types/domain";
 import {
   CheckCircleOutlined,
@@ -60,16 +61,7 @@ export default function FirearmsPage() {
     error,
   } = useQuery<Firearm[]>({
     queryKey: ["firearms"],
-    queryFn: async () => {
-      const response = await fetch("/api/firearms", { cache: "no-store", credentials: "include" });
-      const payload = (await response.json()) as { items?: Firearm[]; message?: string };
-
-      if (!response.ok) {
-        throw new Error(payload.message ?? "Failed to load firearms");
-      }
-
-      return payload.items ?? [];
-    },
+    queryFn: getFirearms,
     retry: false,
   });
 
@@ -152,7 +144,9 @@ export default function FirearmsPage() {
       title: "Condition",
       dataIndex: "condition",
       width: 100,
-      render: (condition: string) => <Tag color={CONDITION_COLORS[condition] ?? "default"}>{condition}</Tag>,
+      render: (condition: string) => (
+        <Tag color={CONDITION_COLORS[condition] ?? "default"}>{condition}</Tag>
+      ),
     },
     {
       title: "Current holder",
@@ -161,7 +155,7 @@ export default function FirearmsPage() {
       ellipsis: true,
       render: (_, row) =>
         row.currentHolderId ? (
-          <Link href={`/personnel/${row.currentHolderId}`}>
+          <Link href={`/personnel/profile?id=${row.currentHolderId}`}>
             <Typography.Link>{row.currentHolderName || "View holder"}</Typography.Link>
           </Link>
         ) : (
@@ -172,7 +166,7 @@ export default function FirearmsPage() {
 
   return (
     <Space orientation="vertical" size={16} style={{ width: "100%" }}>
-      <Card bordered={false} styles={{ body: { padding: "24px 28px" } }}>
+      <Card variant="borderless" styles={{ body: { padding: "24px 28px" } }}>
         <Flex justify="space-between" align="flex-start" wrap="wrap" gap={16}>
           <div>
             <Typography.Title level={3} style={{ margin: 0 }}>
@@ -186,7 +180,12 @@ export default function FirearmsPage() {
             <Button icon={<ReloadOutlined />} onClick={() => void refetch()} loading={loading}>
               Refresh
             </Button>
-            <Button type="primary" icon={<PlusOutlined />} size="large" onClick={() => setIsModalOpen(true)}>
+            <Button
+              type="primary"
+              icon={<PlusOutlined />}
+              size="large"
+              onClick={() => setIsModalOpen(true)}
+            >
               Register firearm
             </Button>
           </Space>
@@ -308,7 +307,11 @@ export default function FirearmsPage() {
                 }
               >
                 {!search && statusFilter === "all" && ownershipFilter === "all" ? (
-                  <Button type="primary" icon={<PlusOutlined />} onClick={() => setIsModalOpen(true)}>
+                  <Button
+                    type="primary"
+                    icon={<PlusOutlined />}
+                    onClick={() => setIsModalOpen(true)}
+                  >
                     Register first firearm
                   </Button>
                 ) : null}

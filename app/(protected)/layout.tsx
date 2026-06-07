@@ -1,5 +1,12 @@
+"use client";
+
+import { AuthGuard } from "@/components/shared/auth-guard";
 import { AppShell } from "@/components/layout/app-shell";
 
 export default function ProtectedLayout({ children }: { children: React.ReactNode }) {
-  return <AppShell>{children}</AppShell>;
+  return (
+    <AuthGuard>
+      <AppShell>{children}</AppShell>
+    </AuthGuard>
+  );
 }

@@ -1,8 +1,7 @@
-import { createPocketBaseServerClient } from "@/lib/pocketbase";
+import { pb } from "@/lib/pb";
 import { pocketBaseErrorMessage } from "@/lib/pocketbase-errors";
 import type { User, UserRole } from "@/types/domain";
 import { ClientResponseError } from "pocketbase";
-import { NextResponse } from "next/server";
 
 function toDomainUser(record: Record<string, unknown>): User {
   return {
@@ -16,28 +15,17 @@ function toDomainUser(record: Record<string, unknown>): User {
   };
 }
 
-export async function GET(request: Request) {
+export async function getUsers(): Promise<User[]> {
   try {
-    const pb = createPocketBaseServerClient(request.headers.get("cookie"));
-
-    if (!pb.authStore.isValid) {
-      return NextResponse.json({ message: "Unauthorized" }, { status: 401 });
-    }
-
     const records = await pb.collection("users").getFullList<Record<string, unknown>>({
       sort: "name",
       fields: "id,email,name,username,role,verified,avatar",
     });
-
-    return NextResponse.json({ items: records.map(toDomainUser) });
+    return records.map(toDomainUser);
   } catch (error) {
     if (error instanceof ClientResponseError) {
-      return NextResponse.json(
-        { message: pocketBaseErrorMessage(error) },
-        { status: error.status || 500 },
-      );
+      throw new Error(pocketBaseErrorMessage(error));
     }
-
-    return NextResponse.json({ message: "Unable to load users" }, { status: 500 });
+    throw error;
   }
 }

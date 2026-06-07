@@ -22,7 +22,7 @@ export function FirearmOwnerLink({ firearm }: FirearmOwnerLinkProps) {
 
   return (
     <Link
-      href={`/personnel/${firearm.ownerId}`}
+      href={`/personnel/profile?id=${firearm.ownerId}`}
       style={{ display: "inline-flex", alignItems: "center", gap: 6, color: "#1677ff" }}
     >
       <TeamOutlined />

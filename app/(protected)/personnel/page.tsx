@@ -1,6 +1,7 @@
 "use client";
 
 import { AddPersonnelModal } from "@/components/personnel/add-personnel-modal";
+import { getPersonnelList } from "@/lib/services/personnel";
 import type { Personnel, PersonnelStatus } from "@/types/domain";
 import { PlusOutlined, ReloadOutlined, SearchOutlined } from "@ant-design/icons";
 import {
@@ -40,16 +41,7 @@ export default function PersonnelPage() {
     error,
   } = useQuery<Personnel[]>({
     queryKey: ["personnel"],
-    queryFn: async () => {
-      const response = await fetch("/api/personnel", { cache: "no-store", credentials: "include" });
-      const payload = (await response.json()) as { items?: Personnel[]; message?: string };
-
-      if (!response.ok) {
-        throw new Error(payload.message ?? "Failed to load personnel");
-      }
-
-      return payload.items ?? [];
-    },
+    queryFn: getPersonnelList,
     retry: false,
   });
 
@@ -86,7 +78,9 @@ export default function PersonnelPage() {
       title: "Status",
       dataIndex: "status",
       width: 100,
-      render: (status: PersonnelStatus) => <Tag color={STATUS_COLORS[status] ?? "default"}>{status}</Tag>,
+      render: (status: PersonnelStatus) => (
+        <Tag color={STATUS_COLORS[status] ?? "default"}>{status}</Tag>
+      ),
     },
   ];
 
@@ -97,13 +91,18 @@ export default function PersonnelPage() {
           <div>
             <Typography.Title level={3} style={{ margin: 0 }}>
               Personnel directory
-            </Typography.Title>          
+            </Typography.Title>
           </div>
           <Space wrap>
             <Button icon={<ReloadOutlined />} onClick={() => void refetch()} loading={loading}>
               Refresh
             </Button>
-            <Button type="primary" icon={<PlusOutlined />} size="large" onClick={() => setIsModalOpen(true)}>
+            <Button
+              type="primary"
+              icon={<PlusOutlined />}
+              size="large"
+              onClick={() => setIsModalOpen(true)}
+            >
               Add
             </Button>
           </Space>
@@ -159,7 +158,7 @@ export default function PersonnelPage() {
           dataSource={filteredPersonnel}
           columns={columns}
           onRow={(record) => ({
-            onClick: () => router.push(`/personnel/${record.id}`),
+            onClick: () => router.push(`/personnel/profile?id=${record.id}`),
             style: { cursor: "pointer" },
           })}
           locale={{
@@ -173,7 +172,11 @@ export default function PersonnelPage() {
                 }
               >
                 {!search && statusFilter === "all" ? (
-                  <Button type="primary" icon={<PlusOutlined />} onClick={() => setIsModalOpen(true)}>
+                  <Button
+                    type="primary"
+                    icon={<PlusOutlined />}
+                    onClick={() => setIsModalOpen(true)}
+                  >
                     Add first personnel
                   </Button>
                 ) : null}

@@ -1,7 +1,8 @@
 "use client";
 
+import { returnAssignment, type ReturnPayload } from "@/lib/services/assignments";
 import type { FirearmAssignment } from "@/types/domain";
-import { App, Button, Col, Form, Input, InputNumber, Modal, Row, Select, Descriptions } from "antd";
+import { App, Button, Col, Descriptions, Form, Input, InputNumber, Modal, Row, Select } from "antd";
 import { useEffect, useState } from "react";
 
 interface ReturnAssignmentModalProps {
@@ -11,22 +12,20 @@ interface ReturnAssignmentModalProps {
   onSaved: () => Promise<void> | void;
 }
 
-interface ReturnAssignmentFormValues {
-  returnCondition: string;
-  quantityReturned?: number;
-  quantityExpended?: number;
-  quantityMissing?: number;
-  remarks?: string;
-}
+type ReturnAssignmentFormValues = ReturnPayload;
 
 const conditionOptions = ["Excellent", "Good", "Fair", "Damaged"];
 
-export function ReturnAssignmentModal({ assignment, open, onCancel, onSaved }: ReturnAssignmentModalProps) {
+export function ReturnAssignmentModal({
+  assignment,
+  open,
+  onCancel,
+  onSaved,
+}: ReturnAssignmentModalProps) {
   const [form] = Form.useForm<ReturnAssignmentFormValues>();
   const { message } = App.useApp();
   const [submitting, setSubmitting] = useState(false);
 
-  // Watch fields for ammunition calculation and validation
   const qtyReturned = Form.useWatch("quantityReturned", form) ?? 0;
   const qtyExpended = Form.useWatch("quantityExpended", form) ?? 0;
   const qtyMissing = Form.useWatch("quantityMissing", form) ?? 0;
@@ -50,30 +49,17 @@ export function ReturnAssignmentModal({ assignment, open, onCancel, onSaved }: R
   async function handleSubmit(values: ReturnAssignmentFormValues) {
     if (!assignment) return;
 
-    // Ammunition check validation
-    if (hasAmmunition) {
-      if (totalAccounted !== issuedQty) {
-        message.error(`Ammunition mismatch: Accounted rounds (${totalAccounted}) must equal Issued rounds (${issuedQty})`);
-        return;
-      }
+    if (hasAmmunition && totalAccounted !== issuedQty) {
+      message.error(
+        `Ammunition mismatch: Accounted rounds (${totalAccounted}) must equal Issued rounds (${issuedQty})`,
+      );
+      return;
     }
 
     setSubmitting(true);
 
     try {
-      const response = await fetch(`/api/assignments/${assignment.id}/return`, {
-        method: "POST",
-        credentials: "include",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(values),
-      });
-
-      const payload = (await response.json()) as { message?: string };
-
-      if (!response.ok) {
-        throw new Error(payload.message ?? "Failed to process return");
-      }
-
+      await returnAssignment(assignment.id, values);
       message.success("Firearm return processed successfully");
       form.resetFields();
       onCancel();
@@ -92,7 +78,7 @@ export function ReturnAssignmentModal({ assignment, open, onCancel, onSaved }: R
       onCancel={onCancel}
       width={640}
       footer={null}
-      destroyOnClose
+      destroyOnHidden
       centered
     >
       {assignment ? (
@@ -103,7 +89,9 @@ export function ReturnAssignmentModal({ assignment, open, onCancel, onSaved }: R
               <Descriptions.Item label="Firearm">{`${assignment.firearmCode} (${assignment.firearmModel} - ${assignment.firearmSerial})`}</Descriptions.Item>
               <Descriptions.Item label="Officer">{assignment.officerName}</Descriptions.Item>
               <Descriptions.Item label="Assigned By">{assignment.assignedByName}</Descriptions.Item>
-              <Descriptions.Item label="Condition on Issue">{assignment.issueCondition}</Descriptions.Item>
+              <Descriptions.Item label="Condition on Issue">
+                {assignment.issueCondition}
+              </Descriptions.Item>
             </Descriptions>
           </div>
 
@@ -120,10 +108,17 @@ export function ReturnAssignmentModal({ assignment, open, onCancel, onSaved }: R
 
             {hasAmmunition ? (
               <>
-                {/* Ammunition details header */}
                 <Col xs={24} style={{ marginTop: 8, marginBottom: 8 }}>
-                  <div style={{ fontWeight: 600, fontSize: 14, borderBottom: "1px solid #f0f0f0", paddingBottom: 6 }}>
-                    Ammunition Accounting (Issued: {issuedQty} rounds of {assignment.ammunitionType})
+                  <div
+                    style={{
+                      fontWeight: 600,
+                      fontSize: 14,
+                      borderBottom: "1px solid #f0f0f0",
+                      paddingBottom: 6,
+                    }}
+                  >
+                    Ammunition Accounting (Issued: {issuedQty} rounds of {assignment.ammunitionType}
+                    )
                   </div>
                 </Col>
 
@@ -156,15 +151,20 @@ export function ReturnAssignmentModal({ assignment, open, onCancel, onSaved }: R
                 </Col>
 
                 <Col xs={24} style={{ marginBottom: 12 }}>
-                  <div style={{
-                    padding: "8px 12px",
-                    borderRadius: 4,
-                    background: totalAccounted === issuedQty ? "#f6ffed" : "#fff2f0",
-                    border: totalAccounted === issuedQty ? "1px solid #b7eb8f" : "1px solid #ffccc7",
-                    color: totalAccounted === issuedQty ? "#389e0d" : "#ff4d4f",
-                    fontSize: 13,
-                    textAlign: "center"
-                  }}>
+                  <div
+                    style={{
+                      padding: "8px 12px",
+                      borderRadius: 4,
+                      background: totalAccounted === issuedQty ? "#f6ffed" : "#fff2f0",
+                      border:
+                        totalAccounted === issuedQty
+                          ? "1px solid #b7eb8f"
+                          : "1px solid #ffccc7",
+                      color: totalAccounted === issuedQty ? "#389e0d" : "#ff4d4f",
+                      fontSize: 13,
+                      textAlign: "center",
+                    }}
+                  >
                     {totalAccounted === issuedQty
                       ? `All ${issuedQty} rounds accounted for.`
                       : `Ammunition mismatch: Accounted rounds sum to ${totalAccounted} (must equal ${issuedQty} issued).`}
@@ -175,7 +175,10 @@ export function ReturnAssignmentModal({ assignment, open, onCancel, onSaved }: R
 
             <Col xs={24}>
               <Form.Item label="Return Remarks / Notes" name="remarks">
-                <Input.TextArea rows={3} placeholder="Notes on returned weapon condition, ammunition usage, etc…" />
+                <Input.TextArea
+                  rows={3}
+                  placeholder="Notes on returned weapon condition, ammunition usage, etc…"
+                />
               </Form.Item>
             </Col>
           </Row>

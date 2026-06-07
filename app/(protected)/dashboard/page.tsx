@@ -11,10 +11,9 @@ import {
   Tag,
 } from "antd";
 import dayjs from "dayjs";
-import { createPocketBaseClient } from "@/lib/pocketbase";
+import { pb } from "@/lib/pb";
 
 export default function DashboardPage() {
-  const pb = createPocketBaseClient();
   
   return (
     <Row gutter={[16, 16]}>

@@ -2,6 +2,7 @@
 
 import type { Personnel } from "@/types/domain";
 import { AddPersonnelModal } from "@/components/personnel/add-personnel-modal";
+import { getPersonnel } from "@/lib/services/personnel";
 import {
   ApartmentOutlined,
   ArrowLeftOutlined,
@@ -17,8 +18,8 @@ import { useQuery } from "@tanstack/react-query";
 import { Breadcrumb, Button, Card, Col, Empty, Row, Skeleton, Space, Tag, Typography } from "antd";
 import dayjs from "dayjs";
 import Link from "next/link";
-import { useParams, useRouter } from "next/navigation";
-import { useState } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
+import { Suspense, useState } from "react";
 
 interface DetailItemProps {
   label: string;
@@ -29,7 +30,9 @@ interface DetailItemProps {
 function DetailItem({ label, value, icon }: DetailItemProps) {
   return (
     <div style={{ display: "flex", gap: 12, alignItems: "flex-start", padding: "8px 0" }}>
-      {icon ? <div style={{ fontSize: 16, color: "#8c8c8c", marginTop: 2, display: "flex" }}>{icon}</div> : null}
+      {icon ? (
+        <div style={{ fontSize: 16, color: "#8c8c8c", marginTop: 2, display: "flex" }}>{icon}</div>
+      ) : null}
       <div>
         <div style={{ fontSize: 12, color: "#8c8c8c", fontWeight: 500 }}>{label}</div>
         <div style={{ fontSize: 14, color: "#262626", marginTop: 2 }}>{value || "—"}</div>
@@ -45,28 +48,15 @@ function getInitials(name?: string) {
   return (parts[0][0] + parts[parts.length - 1][0]).toUpperCase();
 }
 
-export default function PersonnelDetailPage() {
-  const params = useParams<{ id: string }>();
+function PersonnelDetailContent() {
+  const searchParams = useSearchParams();
   const router = useRouter();
-  const personnelId = params.id;
+  const personnelId = searchParams.get("id") ?? "";
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
 
   const { data: person, isLoading, isError, error, refetch } = useQuery<Personnel>({
     queryKey: ["personnel", personnelId],
-    queryFn: async () => {
-      const response = await fetch(`/api/personnel/${personnelId}`, {
-        cache: "no-store",
-        credentials: "include",
-      });
-      const payload = (await response.json()) as { item?: Personnel; message?: string };
-      if (!response.ok) {
-        throw new Error(payload.message ?? "Failed to load personnel");
-      }
-      if (!payload.item) {
-        throw new Error("Personnel record not found");
-      }
-      return payload.item;
-    },
+    queryFn: () => getPersonnel(personnelId),
     enabled: Boolean(personnelId),
     retry: false,
   });
@@ -98,13 +88,7 @@ export default function PersonnelDetailPage() {
       ) : person ? (
         <Row gutter={[24, 24]} align="stretch">
           <Col xs={24} lg={8}>
-            <Card
-              style={{
-                height: "100%",
-                borderRadius: 8,
-                border: "1px solid #f0f0f0",
-              }}
-            >
+            <Card style={{ height: "100%", borderRadius: 8, border: "1px solid #f0f0f0" }}>
               <div style={{ textAlign: "center", padding: "16px 0" }}>
                 <div
                   style={{
@@ -135,10 +119,7 @@ export default function PersonnelDetailPage() {
                 </Typography.Text>
                 <Tag
                   color={person.status === "Active" ? "success" : "default"}
-                  style={{
-                    borderRadius: 4,
-                    fontWeight: 500,
-                  }}
+                  style={{ borderRadius: 4, fontWeight: 500 }}
                 >
                   {person.status}
                 </Tag>
@@ -204,10 +185,18 @@ export default function PersonnelDetailPage() {
               >
                 <Row gutter={[16, 16]}>
                   <Col xs={24} sm={12}>
-                    <DetailItem label="Phone Number" value={person.phone} icon={<PhoneOutlined />} />
+                    <DetailItem
+                      label="Phone Number"
+                      value={person.phone}
+                      icon={<PhoneOutlined />}
+                    />
                   </Col>
                   <Col xs={24} sm={12}>
-                    <DetailItem label="National ID" value={person.nationalId} icon={<SafetyOutlined />} />
+                    <DetailItem
+                      label="National ID"
+                      value={person.nationalId}
+                      icon={<SafetyOutlined />}
+                    />
                   </Col>
                 </Row>
               </Card>
@@ -252,5 +241,13 @@ export default function PersonnelDetailPage() {
         />
       ) : null}
     </Space>
+  );
+}
+
+export default function PersonnelProfilePage() {
+  return (
+    <Suspense fallback={<Card><Skeleton active paragraph={{ rows: 8 }} /></Card>}>
+      <PersonnelDetailContent />
+    </Suspense>
   );
 }

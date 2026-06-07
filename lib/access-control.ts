@@ -1,15 +1,14 @@
-import { cookies } from "next/headers";
+import { pb } from "@/lib/pb";
 import type { UserRole } from "@/types/domain";
 
 export const ROLE_COOKIE = "safms_role";
 
-export async function getCurrentRole(): Promise<UserRole | null> {
-  const cookieStore = await cookies();
-  const role = cookieStore.get(ROLE_COOKIE)?.value;
-  if (role === "ADMIN" || role === "OFFICER") return role;
+export function getCurrentRole(): UserRole | null {
+  const role = pb.authStore.record?.role as string | undefined;
+  if (role === "ADMIN" || role === "OFFICER") return role as UserRole;
   return null;
 }
 
-export async function canManageUsers(): Promise<boolean> {
-  return (await getCurrentRole()) === "ADMIN";
+export function canManageUsers(): boolean {
+  return getCurrentRole() === "ADMIN";
 }

@@ -1,5 +1,7 @@
 "use client";
 
+import { createFirearm, type FirearmCreatePayload } from "@/lib/services/firearms";
+import { getPersonnelList } from "@/lib/services/personnel";
 import type { FirearmCondition, FirearmOwnershipType, FirearmStatus, Personnel } from "@/types/domain";
 import { useQuery } from "@tanstack/react-query";
 import { App, Button, Col, DatePicker, Form, Input, Modal, Row, Select } from "antd";
@@ -46,14 +48,7 @@ export function RegisterFirearmModal({ open, onCancel, onSaved }: RegisterFirear
 
   const { data: personnel = [], isLoading: loadingPersonnel } = useQuery<Personnel[]>({
     queryKey: ["personnel", "picker"],
-    queryFn: async () => {
-      const response = await fetch("/api/personnel", { cache: "no-store", credentials: "include" });
-      const payload = (await response.json()) as { items?: Personnel[]; message?: string };
-      if (!response.ok) {
-        throw new Error(payload.message ?? "Failed to load personnel");
-      }
-      return payload.items ?? [];
-    },
+    queryFn: getPersonnelList,
     enabled: open && ownershipType === "person",
     retry: false,
   });
@@ -68,22 +63,11 @@ export function RegisterFirearmModal({ open, onCancel, onSaved }: RegisterFirear
     setSubmitting(true);
 
     try {
-      const response = await fetch("/api/firearms", {
-        method: "POST",
-        credentials: "include",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          ...values,
-          dateAcquired: values.dateAcquired?.format("YYYY-MM-DD"),
-        }),
-      });
-
-      const payload = (await response.json()) as { message?: string };
-
-      if (!response.ok) {
-        throw new Error(payload.message ?? "Failed to save firearm");
-      }
-
+      const payload: FirearmCreatePayload = {
+        ...values,
+        dateAcquired: values.dateAcquired?.format("YYYY-MM-DD"),
+      };
+      await createFirearm(payload);
       message.success("Firearm registered successfully");
       form.resetFields();
       onCancel();
@@ -118,17 +102,29 @@ export function RegisterFirearmModal({ open, onCancel, onSaved }: RegisterFirear
       >
         <Row gutter={16}>
           <Col xs={24} md={12}>
-            <Form.Item label="Weapon Type" name="weaponType" rules={[{ required: true, message: "Select weapon type" }]}>
+            <Form.Item
+              label="Weapon Type"
+              name="weaponType"
+              rules={[{ required: true, message: "Select weapon type" }]}
+            >
               <Select options={weaponTypes.map((value) => ({ value }))} />
             </Form.Item>
           </Col>
           <Col xs={24} md={12}>
-            <Form.Item label="Model" name="model" rules={[{ required: true, message: "Enter model" }]}>
+            <Form.Item
+              label="Model"
+              name="model"
+              rules={[{ required: true, message: "Enter model" }]}
+            >
               <Input placeholder="e.g. AK-103" />
             </Form.Item>
           </Col>
           <Col xs={24} md={12}>
-            <Form.Item label="Serial Number" name="serialNumber" rules={[{ required: true, message: "Enter serial number" }]}>
+            <Form.Item
+              label="Serial Number"
+              name="serialNumber"
+              rules={[{ required: true, message: "Enter serial number" }]}
+            >
               <Input placeholder="e.g. AK103-778901" />
             </Form.Item>
           </Col>
@@ -153,7 +149,11 @@ export function RegisterFirearmModal({ open, onCancel, onSaved }: RegisterFirear
             </Form.Item>
           </Col>
           <Col xs={24} md={12}>
-            <Form.Item label="Ownership Type" name="ownershipType" rules={[{ required: true, message: "Select ownership type" }]}>
+            <Form.Item
+              label="Ownership Type"
+              name="ownershipType"
+              rules={[{ required: true, message: "Select ownership type" }]}
+            >
               <Select options={ownershipTypes} />
             </Form.Item>
           </Col>
@@ -181,12 +181,20 @@ export function RegisterFirearmModal({ open, onCancel, onSaved }: RegisterFirear
             </Col>
           ) : null}
           <Col xs={24} md={6}>
-            <Form.Item label="Status" name="status" rules={[{ required: true, message: "Select status" }]}>
+            <Form.Item
+              label="Status"
+              name="status"
+              rules={[{ required: true, message: "Select status" }]}
+            >
               <Select options={statusOptions.map((value) => ({ value }))} />
             </Form.Item>
           </Col>
           <Col xs={24} md={6}>
-            <Form.Item label="Condition" name="condition" rules={[{ required: true, message: "Select condition" }]}>
+            <Form.Item
+              label="Condition"
+              name="condition"
+              rules={[{ required: true, message: "Select condition" }]}
+            >
               <Select options={conditionOptions.map((value) => ({ value }))} />
             </Form.Item>
           </Col>

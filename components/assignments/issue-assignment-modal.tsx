@@ -1,5 +1,8 @@
 "use client";
 
+import { createAssignment, type AssignmentCreatePayload } from "@/lib/services/assignments";
+import { getFirearms } from "@/lib/services/firearms";
+import { getPersonnelList } from "@/lib/services/personnel";
 import type { Firearm, Personnel } from "@/types/domain";
 import { useQuery } from "@tanstack/react-query";
 import { App, Button, Col, DatePicker, Form, Input, InputNumber, Modal, Row, Select } from "antd";
@@ -31,31 +34,21 @@ export function IssueAssignmentModal({ open, onCancel, onSaved }: IssueAssignmen
   const { message } = App.useApp();
   const [submitting, setSubmitting] = useState(false);
 
-  // Fetch only Available firearms
   const { data: firearms = [], isLoading: loadingFirearms } = useQuery<Firearm[]>({
     queryKey: ["firearms", "picker-available"],
     queryFn: async () => {
-      const response = await fetch("/api/firearms", { cache: "no-store", credentials: "include" });
-      const payload = (await response.json()) as { items?: Firearm[]; message?: string };
-      if (!response.ok) {
-        throw new Error(payload.message ?? "Failed to load firearms");
-      }
-      return (payload.items ?? []).filter((f) => f.status === "Available");
+      const items = await getFirearms();
+      return items.filter((f) => f.status === "Available");
     },
     enabled: open,
     retry: false,
   });
 
-  // Fetch only Active personnel
   const { data: personnel = [], isLoading: loadingPersonnel } = useQuery<Personnel[]>({
     queryKey: ["personnel", "picker-active"],
     queryFn: async () => {
-      const response = await fetch("/api/personnel", { cache: "no-store", credentials: "include" });
-      const payload = (await response.json()) as { items?: Personnel[]; message?: string };
-      if (!response.ok) {
-        throw new Error(payload.message ?? "Failed to load personnel");
-      }
-      return (payload.items ?? []).filter((p) => p.status === "Active");
+      const items = await getPersonnelList();
+      return items.filter((p) => p.status === "Active");
     },
     enabled: open,
     retry: false,
@@ -65,22 +58,11 @@ export function IssueAssignmentModal({ open, onCancel, onSaved }: IssueAssignmen
     setSubmitting(true);
 
     try {
-      const response = await fetch("/api/assignments", {
-        method: "POST",
-        credentials: "include",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          ...values,
-          expectedReturnDate: values.expectedReturnDate.format("YYYY-MM-DD"),
-        }),
-      });
-
-      const payload = (await response.json()) as { message?: string };
-
-      if (!response.ok) {
-        throw new Error(payload.message ?? "Failed to create assignment");
-      }
-
+      const payload: AssignmentCreatePayload = {
+        ...values,
+        expectedReturnDate: values.expectedReturnDate.format("YYYY-MM-DD"),
+      };
+      await createAssignment(payload);
       message.success("Firearm assigned successfully");
       form.resetFields();
       onCancel();
@@ -99,7 +81,7 @@ export function IssueAssignmentModal({ open, onCancel, onSaved }: IssueAssignmen
       onCancel={onCancel}
       width={720}
       footer={null}
-      destroyOnClose
+      destroyOnHidden
       centered
     >
       <Form
@@ -180,9 +162,15 @@ export function IssueAssignmentModal({ open, onCancel, onSaved }: IssueAssignmen
             </Form.Item>
           </Col>
 
-          {/* Ammunition Details Header */}
           <Col xs={24} style={{ marginTop: 8, marginBottom: 8 }}>
-            <div style={{ fontWeight: 600, fontSize: 14, borderBottom: "1px solid #f0f0f0", paddingBottom: 6 }}>
+            <div
+              style={{
+                fontWeight: 600,
+                fontSize: 14,
+                borderBottom: "1px solid #f0f0f0",
+                paddingBottom: 6,
+              }}
+            >
               Ammunition Issuance (Optional)
             </div>
           </Col>
@@ -198,10 +186,12 @@ export function IssueAssignmentModal({ open, onCancel, onSaved }: IssueAssignmen
             </Form.Item>
           </Col>
 
-          {/* Remarks Section */}
           <Col xs={24} style={{ marginTop: 8 }}>
             <Form.Item label="Remarks / Notes" name="remarks">
-              <Input.TextArea rows={3} placeholder="Additional notes about this assignment transaction…" />
+              <Input.TextArea
+                rows={3}
+                placeholder="Additional notes about this assignment transaction…"
+              />
             </Form.Item>
           </Col>
         </Row>

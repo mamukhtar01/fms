@@ -1,5 +1,6 @@
 "use client";
 
+import { createPersonnel, updatePersonnel, type PersonnelPayload } from "@/lib/services/personnel";
 import type { Personnel, PersonnelStatus } from "@/types/domain";
 import { App, Button, Col, Form, Input, Modal, Row, Select } from "antd";
 import { useEffect, useState } from "react";
@@ -11,16 +12,7 @@ interface AddPersonnelModalProps {
   personnel?: Personnel;
 }
 
-interface AddPersonnelFormValues {
-  personnelId: string;
-  fullName: string;
-  rank: string;
-  position: string;
-  department: string;
-  phone: string;
-  nationalId?: string;
-  status: PersonnelStatus;
-}
+type AddPersonnelFormValues = PersonnelPayload;
 
 const statusOptions: PersonnelStatus[] = ["Active", "Inactive"];
 
@@ -52,22 +44,11 @@ export function AddPersonnelModal({ open, onCancel, onSaved, personnel }: AddPer
     setSubmitting(true);
 
     try {
-      const url = personnel ? `/api/personnel/${personnel.id}` : "/api/personnel";
-      const method = personnel ? "PUT" : "POST";
-
-      const response = await fetch(url, {
-        method,
-        credentials: "include",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(values),
-      });
-
-      const payload = (await response.json()) as { message?: string };
-
-      if (!response.ok) {
-        throw new Error(payload.message ?? "Failed to save personnel");
+      if (personnel) {
+        await updatePersonnel(personnel.id, values);
+      } else {
+        await createPersonnel(values);
       }
-
       message.success(personnel ? "Personnel updated successfully" : "Personnel saved successfully");
       form.resetFields();
       onCancel();
@@ -152,7 +133,11 @@ export function AddPersonnelModal({ open, onCancel, onSaved, personnel }: AddPer
             </Form.Item>
           </Col>
           <Col xs={24} md={12}>
-            <Form.Item label="Status" name="status" rules={[{ required: true, message: "Select status" }]}>
+            <Form.Item
+              label="Status"
+              name="status"
+              rules={[{ required: true, message: "Select status" }]}
+            >
               <Select options={statusOptions.map((value) => ({ value }))} />
             </Form.Item>
           </Col>

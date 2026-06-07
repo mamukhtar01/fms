@@ -1,5 +1,6 @@
 "use client";
 
+import { login } from "@/lib/services/auth";
 import { App, Button, Card, Form, Input, Space, Typography } from "antd";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
@@ -18,22 +19,9 @@ export default function LoginPage() {
     setIsLoading(true);
 
     try {
-      const response = await fetch("/api/auth/login", {
-        method: "POST",
-        credentials: "include",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(values),
-      });
-
-      const payload = (await response.json()) as { message?: string };
-
-      if (!response.ok) {
-        throw new Error(payload.message ?? "Unable to authenticate");
-      }
-
+      await login(values.email, values.password);
       message.success("Login successful");
       router.replace("/dashboard");
-      router.refresh();
     } catch (error) {
       message.error(error instanceof Error ? error.message : "Unable to authenticate");
     } finally {
