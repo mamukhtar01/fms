@@ -237,8 +237,12 @@ export default function FirearmsPage() {
         <Alert
           type="error"
           showIcon
-          message="Could not load firearms"
-          description={error instanceof Error ? error.message : "Please try again."}
+          description={
+            <>
+              <strong>Could not load firearms.</strong>{" "}
+              {error instanceof Error ? error.message : "Please try again."}
+            </>
+          }
           action={
             <Button size="small" onClick={() => void refetch()}>
               Retry

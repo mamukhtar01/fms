@@ -11,8 +11,6 @@ import {
   Tag,
 } from "antd";
 import dayjs from "dayjs";
-import { pb } from "@/lib/pb";
-
 export default function DashboardPage() {
   
   return (
@@ -82,10 +80,8 @@ export default function DashboardPage() {
         <Alert
           type="info"
           showIcon
-          title="Refresh to see the latest updates on firearm assignments and movements."
-       
+          description="Refresh to see the latest updates on firearm assignments and movements."
         />
-        <h1>{pb.authStore.isValid ? "(Authenticated)" : "(Not Authenticated)"}</h1>
       </Col>
     </Row>
   );

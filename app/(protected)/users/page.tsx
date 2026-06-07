@@ -22,8 +22,11 @@ export default function UsersPage() {
       <Alert
         type="error"
         showIcon
-        message="Access denied"
-        description="Only administrators can access user management."
+        description={
+          <>
+            <strong>Access denied.</strong> Only administrators can access user management.
+          </>
+        }
       />
     );
   }

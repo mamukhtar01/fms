@@ -4,8 +4,21 @@ import { createAssignment, type AssignmentCreatePayload } from "@/lib/services/a
 import { getFirearms } from "@/lib/services/firearms";
 import { getPersonnelList } from "@/lib/services/personnel";
 import type { Firearm, Personnel } from "@/types/domain";
-import { useQuery } from "@tanstack/react-query";
-import { App, Button, Col, DatePicker, Form, Input, InputNumber, Modal, Row, Select } from "antd";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
+import {
+  Alert,
+  App,
+  Button,
+  Col,
+  DatePicker,
+  Form,
+  Input,
+  InputNumber,
+  Modal,
+  Row,
+  Select,
+  Space,
+} from "antd";
 import type { Dayjs } from "dayjs";
 import dayjs from "dayjs";
 import { useState } from "react";
@@ -29,30 +42,57 @@ interface IssueAssignmentFormValues {
 
 const conditionOptions = ["Excellent", "Good", "Fair", "Damaged"];
 
+const FIREARMS_PICKER_KEY = ["firearms", "picker-available"];
+const PERSONNEL_PICKER_KEY = ["personnel", "picker-active"];
+
 export function IssueAssignmentModal({ open, onCancel, onSaved }: IssueAssignmentModalProps) {
   const [form] = Form.useForm<IssueAssignmentFormValues>();
   const { message } = App.useApp();
   const [submitting, setSubmitting] = useState(false);
+  const queryClient = useQueryClient();
 
-  const { data: firearms = [], isLoading: loadingFirearms } = useQuery<Firearm[]>({
-    queryKey: ["firearms", "picker-available"],
+  const {
+    data: firearms = [],
+    isLoading: loadingFirearms,
+    isError: firearmsError,
+    refetch: refetchFirearms,
+  } = useQuery<Firearm[]>({
+    queryKey: FIREARMS_PICKER_KEY,
     queryFn: async () => {
       const items = await getFirearms();
       return items.filter((f) => f.status === "Available");
     },
     enabled: open,
-    retry: false,
+    staleTime: 0,
+    gcTime: 0,
+    retry: 2,
   });
 
-  const { data: personnel = [], isLoading: loadingPersonnel } = useQuery<Personnel[]>({
-    queryKey: ["personnel", "picker-active"],
+  const {
+    data: personnel = [],
+    isLoading: loadingPersonnel,
+    isError: personnelError,
+    error: personnelFetchError,
+    refetch: refetchPersonnel,
+  } = useQuery<Personnel[]>({
+    queryKey: PERSONNEL_PICKER_KEY,
     queryFn: async () => {
       const items = await getPersonnelList();
       return items.filter((p) => p.status === "Active");
     },
     enabled: open,
-    retry: false,
+    staleTime: 0,
+    gcTime: 0,
+    retry: 2,
   });
+
+  function handleCancel() {
+    // Evict picker caches so next open always fetches fresh
+    queryClient.removeQueries({ queryKey: FIREARMS_PICKER_KEY });
+    queryClient.removeQueries({ queryKey: PERSONNEL_PICKER_KEY });
+    form.resetFields();
+    onCancel();
+  }
 
   async function handleSubmit(values: IssueAssignmentFormValues) {
     setSubmitting(true);
@@ -64,6 +104,8 @@ export function IssueAssignmentModal({ open, onCancel, onSaved }: IssueAssignmen
       };
       await createAssignment(payload);
       message.success("Firearm assigned successfully");
+      queryClient.removeQueries({ queryKey: FIREARMS_PICKER_KEY });
+      queryClient.removeQueries({ queryKey: PERSONNEL_PICKER_KEY });
       form.resetFields();
       onCancel();
       await onSaved();
@@ -74,16 +116,51 @@ export function IssueAssignmentModal({ open, onCancel, onSaved }: IssueAssignmen
     }
   }
 
+  const hasPickerError = firearmsError || personnelError;
+
   return (
     <Modal
       title="Issue Firearm Assignment"
       open={open}
-      onCancel={onCancel}
+      onCancel={handleCancel}
       width={720}
       footer={null}
       destroyOnHidden
       centered
     >
+      {hasPickerError && (
+        <Space direction="vertical" style={{ width: "100%", marginBottom: 16 }}>
+          {firearmsError && (
+            <Alert
+              type="error"
+              showIcon
+              description="Could not load available firearms"
+              action={
+                <Button size="small" onClick={() => void refetchFirearms()}>
+                  Retry
+                </Button>
+              }
+            />
+          )}
+          {personnelError && (
+            <Alert
+              type="error"
+              showIcon
+              description={
+                personnelFetchError instanceof Error
+                  ? personnelFetchError.message
+                  : "Could not load active personnel"
+              }
+              action={
+                <Button size="small" onClick={() => void refetchPersonnel()}>
+                  Retry
+                </Button>
+              }
+            />
+          )}
+        </Space>
+      )}
+
       <Form
         form={form}
         layout="vertical"
@@ -110,10 +187,17 @@ export function IssueAssignmentModal({ open, onCancel, onSaved }: IssueAssignmen
                   label: `${f.firearmId} - ${f.model} (${f.serialNumber})`,
                   filterLabel: `${f.firearmId} ${f.model} ${f.serialNumber}`.toLowerCase(),
                 }))}
-                notFoundContent={loadingFirearms ? "Loading firearms…" : "No available firearms"}
+                notFoundContent={
+                  loadingFirearms
+                    ? "Loading firearms…"
+                    : firearmsError
+                      ? "Failed to load — click Retry above"
+                      : "No available firearms"
+                }
               />
             </Form.Item>
           </Col>
+
           <Col xs={24} md={12}>
             <Form.Item
               label="Assign Officer"
@@ -123,17 +207,24 @@ export function IssueAssignmentModal({ open, onCancel, onSaved }: IssueAssignmen
               <Select
                 showSearch
                 loading={loadingPersonnel}
-                placeholder="Search officer by ID, name, rank…"
+                placeholder="Search officer by name, ID, rank…"
                 optionFilterProp="filterLabel"
                 options={personnel.map((p) => ({
                   value: p.id,
                   label: `${p.fullName} (${p.personnelId}) - ${p.rank}`,
                   filterLabel: `${p.fullName} ${p.personnelId} ${p.rank}`.toLowerCase(),
                 }))}
-                notFoundContent={loadingPersonnel ? "Loading personnel…" : "No active officers"}
+                notFoundContent={
+                  loadingPersonnel
+                    ? "Loading personnel…"
+                    : personnelError
+                      ? "Failed to load — click Retry above"
+                      : "No active officers"
+                }
               />
             </Form.Item>
           </Col>
+
           <Col xs={24} md={12}>
             <Form.Item
               label="Expected Return Date"
@@ -143,6 +234,7 @@ export function IssueAssignmentModal({ open, onCancel, onSaved }: IssueAssignmen
               <DatePicker style={{ width: "100%" }} format="YYYY-MM-DD" />
             </Form.Item>
           </Col>
+
           <Col xs={24} md={12}>
             <Form.Item
               label="Issue Condition"
@@ -152,6 +244,7 @@ export function IssueAssignmentModal({ open, onCancel, onSaved }: IssueAssignmen
               <Select options={conditionOptions.map((value) => ({ value }))} />
             </Form.Item>
           </Col>
+
           <Col xs={24}>
             <Form.Item
               label="Purpose"
@@ -180,6 +273,7 @@ export function IssueAssignmentModal({ open, onCancel, onSaved }: IssueAssignmen
               <Input placeholder="e.g. 7.62x39mm, 9mm NATO" />
             </Form.Item>
           </Col>
+
           <Col xs={24} md={12}>
             <Form.Item label="Quantity Issued" name="quantityIssued">
               <InputNumber min={0} placeholder="e.g. 30" style={{ width: "100%" }} />
@@ -198,7 +292,7 @@ export function IssueAssignmentModal({ open, onCancel, onSaved }: IssueAssignmen
 
         <Row justify="end" gutter={8} style={{ marginTop: 12 }}>
           <Col>
-            <Button onClick={onCancel}>Cancel</Button>
+            <Button onClick={handleCancel}>Cancel</Button>
           </Col>
           <Col>
             <Button type="primary" htmlType="submit" loading={submitting}>

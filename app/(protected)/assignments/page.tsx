@@ -284,8 +284,12 @@ export default function AssignmentsPage() {
         <Alert
           type="error"
           showIcon
-          message="Could not load firearm assignments"
-          description={error instanceof Error ? error.message : "Please try again."}
+          description={
+            <>
+              <strong>Could not load firearm assignments.</strong>{" "}
+              {error instanceof Error ? error.message : "Please try again."}
+            </>
+          }
           action={
             <Button size="small" onClick={() => void refetch()}>
               Retry
